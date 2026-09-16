@@ -201,7 +201,13 @@ body {
   cursor: pointer;
 }
 
-.lang-switch button[aria-pressed="true"] {
+/* Drive the highlight from the language on <html> rather than the aria-pressed
+ * hard-coded in the markup: the inline head script sets data-lang before first
+ * paint, so a returning reader whose stored choice is not the default never
+ * sees the wrong button lit. aria-pressed is still kept up to date for
+ * assistive tech, it just no longer decides the colour. */
+:root[data-lang="en"] .lang-switch button[data-lang-set="en"],
+:root[data-lang="zh"] .lang-switch button[data-lang-set="zh"] {
   background: var(--accent-soft);
   color: var(--accent);
 }
