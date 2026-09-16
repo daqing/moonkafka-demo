@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设计与实现 · moonkafka demo</title>
+<meta name="description" content="模块边界、produce/consume 的运行路径、错误处理与 harness 的设计。">
+<script>
+  (function () {
+    var root = document.documentElement;
+    var theme = null, lang = null;
+    try {
+      theme = localStorage.getItem("moonkafka-demo-theme");
+      lang = localStorage.getItem("moonkafka-demo-lang");
+    } catch (e) {}
+    if (theme !== "light" && theme !== "dark") {
+      theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    lang = lang === "en" ? "en" : "zh";
+    root.setAttribute("data-theme", theme);
+    root.setAttribute("data-lang", lang);
+    root.setAttribute("lang", lang === "en" ? "en" : "zh-CN");
+  })();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="index.html">
+    <span class="brand-mark" aria-hidden="true"></span>
+    moonkafka demo<span class="brand-sub">docs</span>
+  </a>
+  <span class="header-spacer"></span>
+  <div class="header-actions">
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="sidebar">☰</button>
+    <div class="lang-switch" role="group" aria-label="切换到英文">
+      <button type="button" data-lang-set="zh" aria-pressed="true">中文</button>
+      <button type="button" data-lang-set="en" aria-pressed="false">EN</button>
+    </div>
+    <button class="theme-toggle" type="button">☽</button>
+    <a class="icon-link" href="https://github.com/daqing/moonkafka-demo" aria-label="GitHub">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="layout">
+
+  <nav class="sidebar" id="sidebar">
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">开始</span><span data-l="en">Start</span></p>
+      <a href="index.html"><span data-l="zh">概览</span><span data-l="en">Overview</span></a>
+      <a href="getting-started.html"><span data-l="zh">快速开始</span><span data-l="en">Getting started</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">使用</span><span data-l="en">Usage</span></p>
+      <a href="cli.html"><span data-l="zh">命令行参考</span><span data-l="en">CLI reference</span></a>
+      <a href="itest.html"><span data-l="zh">集成测试</span><span data-l="en">Integration test</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">深入</span><span data-l="en">Internals</span></p>
+      <a class="active" href="architecture.html"><span data-l="zh">设计与实现</span><span data-l="en">Design</span></a>
+      <a href="troubleshooting.html"><span data-l="zh">常见问题</span><span data-l="en">Troubleshooting</span></a>
+    </div>
+    <p class="sidebar-foot">
+      <span data-l="zh">基于 <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1</span>
+      <span data-l="en">Built on <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1</span>
+    </p>
+  </nav>
+
+  <main class="content">
+
+    <h1><span data-l="zh">设计与实现</span><span data-l="en">Design</span></h1>
+
+    <p class="lead" data-l="zh">代码不多，边界很清楚：Kafka 的事交给 moonkafka。</p>
+    <p class="lead" data-l="en">There is not much code, and the boundary is sharp: Kafka belongs to moonkafka.</p>
+
+    <h2><span data-l="zh">模块边界</span><span data-l="en">Module boundary</span></h2>
+
+<pre><code>cmd/main                        daqing/moonkafka                 Apache Kafka
+────────────────────────────    ──────────────────────────────   ────────────
+argument parsing                broker connection                broker
+UTF-8 conversion      ────────► metadata handling       ────────► topic log
+result rendering                Kafka protocol
+                                Producer::send
+                                Consumer::poll</code></pre>
+
+    <p data-l="zh">
+      左边这一列就是本项目全部的职责。协议编码、连接管理、元数据刷新、偏移量跟踪都在
+      moonkafka 里，<code>cmd/main</code> 没有一行自定义的 Kafka 客户端逻辑。
+    </p>
+    <p data-l="en">
+      The left column is the whole of this project's responsibility. Protocol encoding,
+      connection management, metadata refresh and offset tracking all live in moonkafka;
+      <code>cmd/main</code> contains no custom Kafka client logic at all.
+    </p>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>包</th><th>导入</th></tr></thead>
+        <tbody>
+          <tr><td><code>cmd/main</code></td><td><code>daqing/moonkafka</code>、<code>moonbitlang/async</code>、<code>core/encoding/utf8</code>、<code>core/env</code>、<code>core/string</code></td></tr>
+          <tr><td><code>tests/itest</code></td><td><code>async</code>、<code>async/fs</code>、<code>async/shell</code>、<code>core/argparse</code>、<code>core/string</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Package</th><th>Imports</th></tr></thead>
+        <tbody>
+          <tr><td><code>cmd/main</code></td><td><code>daqing/moonkafka</code>, <code>moonbitlang/async</code>, <code>core/encoding/utf8</code>, <code>core/env</code>, <code>core/string</code></td></tr>
+          <tr><td><code>tests/itest</code></td><td><code>async</code>, <code>async/fs</code>, <code>async/shell</code>, <code>core/argparse</code>, <code>core/string</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p data-l="zh">
+      模块依赖是 <code>daqing/moonkafka@0.2.1</code> 与
+      <code>moonbitlang/async@0.21.2</code>。<code>moon.mod</code> 声明
+      <code>preferred_target = "native"</code>；两个包都限制
+      <code>supported_targets = "+native"</code>，<code>cmd/main</code> 还为 native 目标加了
+      <code>cc-link-flags = "-lz"</code>。
+    </p>
+    <p data-l="en">
+      The module depends on <code>daqing/moonkafka@0.2.1</code> and
+      <code>moonbitlang/async@0.21.2</code>. <code>moon.mod</code> declares
+      <code>preferred_target = "native"</code>; both packages constrain
+      <code>supported_targets = "+native"</code>, and <code>cmd/main</code> adds
+      <code>cc-link-flags = "-lz"</code> for the native target.
+    </p>
+
+    <h2><span data-l="zh">produce 的路径</span><span data-l="en">The produce path</span></h2>
+
+    <p data-l="zh">
+      取参数、建连接、发一条、打印偏移量——全部发生在
+      <code>@async.with_task_group</code> 里，连接在作用域结束时由 <code>defer</code> 关闭。
+    </p>
+    <p data-l="en">
+      Read the arguments, connect, send once, print the offset — all inside an
+      <code>@async.with_task_group</code>, with the connection closed by
+      <code>defer</code> when the scope ends.
+    </p>
+
+<pre><code>async fn run_producer(args : Array[String]) -&gt; Unit {
+  guard args.get(2) is Some(topic) &amp;&amp; args.get(3) is Some(value) else {
+    println("usage: produce &lt;topic&gt; &lt;value&gt; [key] [host] [port]")
+    return
+  }
+  let key = args.get(4).map(text =&gt; @utf8.encode(text))
+  let host = args.get(5).unwrap_or("127.0.0.1")
+  let port = parse_port(args, 6)
+
+  @async.with_task_group(group =&gt; {
+    let producer = @moonkafka.Producer::connect(
+      group~, host~, port~, topic~, acks=-1,
+    )
+    defer producer.close()
+
+    let offset = producer.send(key?, value=@utf8.encode(value))
+    println("sent to topic \"\{topic}\" at offset \{offset}")
+  })
+}</code></pre>
+
+    <ul data-l="zh">
+      <li><code>key</code> 是可选的：省略时 <code>key?</code> 传 <code>None</code>，发送一条无 key 的记录。</li>
+      <li><code>acks=-1</code> 要求所有同步副本确认，<code>Producer::send</code> 因此返回 broker 分配的偏移量（<code>Int64</code>），直接打印出来。</li>
+      <li>key 与 value 都先经 <code>@utf8.encode</code> 转成 <code>Bytes</code>——moonkafka 的 API 收发的是字节。</li>
+    </ul>
+    <ul data-l="en">
+      <li><code>key</code> is optional: when omitted, <code>key?</code> is <code>None</code> and a keyless record is sent.</li>
+      <li><code>acks=-1</code> requires every in-sync replica to acknowledge, so <code>Producer::send</code> returns the offset the broker assigned (<code>Int64</code>), which is printed directly.</li>
+      <li>Both key and value go through <code>@utf8.encode</code> first — moonkafka's API takes and returns bytes.</li>
+    </ul>
+
+    <h2><span data-l="zh">consume 的路径</span><span data-l="en">The consume path</span></h2>
+
+<pre><code>async fn run_consumer(args : Array[String]) -&gt; Unit {
+  let (max_messages, args) = take_max_messages(args)
+  guard args.get(2) is Some(topic) else { /* usage */ return }
+  let host = args.get(3).unwrap_or("127.0.0.1")
+  let port = parse_port(args, 4)
+  let start_from = parse_start_from(args.get(5))
+
+  @async.with_task_group(group =&gt; {
+    let consumer = @moonkafka.Consumer::connect(
+      group~, host~, port~, topic~, start_from~,
+    )
+    defer consumer.close()
+
+    let mut received = 0
+    for ;; {
+      for record in consumer.poll() {
+        let key = record.key_utf8().unwrap_or("&lt;null&gt;")
+        let value = record.value_utf8().unwrap_or("&lt;tombstone&gt;")
+        println("offset=\{record.offset} timestamp=\{record.timestamp} ...")
+        received = received + 1
+      }
+      if max_messages is Some(limit) &amp;&amp; received &gt;= limit {
+        break
+      }
+    }
+  })
+}</code></pre>
+
+    <p data-l="zh">
+      外层是无限循环，内层遍历 <code>poll()</code> 返回的一批记录。
+      <code>--max-messages</code> 的判定放在<strong>批处理循环之外</strong>：计数达标就跳出，
+      因此读够 n 条后退出码是 0，不会因为多读了一批而超发。
+    </p>
+    <p data-l="en">
+      The outer loop is unbounded; the inner one walks the batch <code>poll()</code>
+      returns. The <code>--max-messages</code> check sits <em>outside</em> the batch loop:
+      once the count is reached the program breaks, so it exits 0 after exactly n records
+      rather than overshooting by a batch.
+    </p>
+
+    <h3><span data-l="zh">这是一个「简单消费者」</span><span data-l="en">This is a simple consumer</span></h3>
+
+    <p data-l="zh">
+      moonkafka 的 <code>Consumer</code> 在注释里写得很清楚：它拉取单个主题的所有分区，
+      <strong>不做 consumer group 协调</strong>，偏移量只记在内存里。这对一个演示程序正合适，
+      但有两件事需要知道：
+    </p>
+    <p data-l="en">
+      moonkafka's <code>Consumer</code> says so itself: it fetches all partitions of one
+      topic, <strong>without consumer group coordination</strong>, and tracks offsets in
+      memory. That suits a demo, with two consequences worth knowing:
+    </p>
+
+    <ul data-l="zh">
+      <li>偏移量不会被提交，所以重启后不会从上次的位置继续——一切都由 <code>earliest</code> / <code>latest</code> 决定。</li>
+      <li>多个实例之间不会分摊分区，每个实例都会读到自己那份全量数据。</li>
+    </ul>
+    <ul data-l="en">
+      <li>Offsets are never committed, so a restart does not resume where it left off — <code>earliest</code> / <code>latest</code> decides everything.</li>
+      <li>Several instances do not split partitions between them; each one reads its own copy of everything.</li>
+    </ul>
+
+    <p data-l="zh">
+      <code>Consumer::poll()</code> 接受 <code>max_wait_ms</code>（默认 500）与
+      <code>max_bytes</code>（默认 1 MiB）两个可选参数，本 demo 都用默认值。
+    </p>
+    <p data-l="en">
+      <code>Consumer::poll()</code> takes optional <code>max_wait_ms</code> (500 by default)
+      and <code>max_bytes</code> (1 MiB by default); the demo uses both defaults.
+    </p>
+
+    <h2><span data-l="zh">参数解析</span><span data-l="en">Argument parsing</span></h2>
+
+    <p data-l="zh">
+      <code>--max-messages</code> 需要前置处理：它在解析早期被
+      <code>take_max_messages</code> 摘出来，返回「限制值 + 剩余位置参数」。
+    </p>
+    <p data-l="en">
+      <code>--max-messages</code> needs a pre-pass:
+      <code>take_max_messages</code> pulls it out early and returns the limit together with
+      the remaining positional arguments, in order.
+    </p>
+
+<pre><code>fn take_max_messages(args : Array[String]) -&gt; (Int?, Array[String])</code></pre>
+
+    <ul data-l="zh">
+      <li>同时接受 <code>--max-messages 5</code> 与 <code>--max-messages=5</code>。</li>
+      <li>非 flag 的参数按原顺序保留，因此索引位置不变（<code>args[2]</code> 仍是 topic）。</li>
+      <li>缺失取值或取值非法都会当场中止。</li>
+    </ul>
+    <ul data-l="en">
+      <li>Both <code>--max-messages 5</code> and <code>--max-messages=5</code> are accepted.</li>
+      <li>Non-flag arguments keep their original order, so indices do not shift (<code>args[2]</code> is still the topic).</li>
+      <li>A missing or invalid value aborts immediately.</li>
+    </ul>
+
+    <div class="callout warn" data-l="zh">
+      <span class="callout-title">代价：位置参数必须写在前面</span>
+      因为 flag 与它的取值从序列里消失，写在中间的
+      <code>--max-messages</code> 会让后面的位置参数前移一格。细节见
+      <a href="cli.html">命令行参考</a>。
+    </div>
+    <div class="callout warn" data-l="en">
+      <span class="callout-title">The cost: positionals go first</span>
+      Since the flag and its value vanish from the sequence, a <code>--max-messages</code>
+      placed in the middle shifts later positionals up by one. Details in the
+      <a href="cli.html">CLI reference</a>.
+    </div>
+
+    <p data-l="zh">
+      <code>parse_port</code> 与 <code>parse_start_from</code> 在同一层做校验：端口用
+      <code>@string.parse_int</code> 转换并在 <code>catch</code> 里报错，起始位置用模式匹配
+      限定为两个取值。
+    </p>
+    <p data-l="en">
+      <code>parse_port</code> and <code>parse_start_from</code> validate at the same layer:
+      the port is converted with <code>@string.parse_int</code> and reports errors from a
+      <code>catch</code> block, while the start position is pattern-matched down to its two
+      legal values.
+    </p>
+
+    <h2><span data-l="zh">错误处理</span><span data-l="en">Error handling</span></h2>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>场景</th><th>做法</th></tr></thead>
+        <tbody>
+          <tr><td>缺少必需参数</td><td><code>guard … else { println(usage); return }</code>——打印用法后正常结束</td></tr>
+          <tr><td>取值非法</td><td><code>println(…) ; abort("")</code>——先给出人能看懂的说明，再中止</td></tr>
+          <tr><td>数字解析失败</td><td><code>@string.parse_int(v) catch { _ =&gt; … }</code>，把异常换成一条消息</td></tr>
+          <tr><td>资源释放</td><td><code>defer consumer.close()</code> / <code>defer producer.close()</code>，连接一定被关掉</td></tr>
+          <tr><td>任务生命周期</td><td><code>@async.with_task_group(group =&gt; …)</code>——moonkafka 的连接需要借一个 task group</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Situation</th><th>Approach</th></tr></thead>
+        <tbody>
+          <tr><td>Missing required argument</td><td><code>guard … else { println(usage); return }</code> — print usage, return normally</td></tr>
+          <tr><td>Invalid value</td><td><code>println(…) ; abort("")</code> — a readable message first, then abort</td></tr>
+          <tr><td>A number fails to parse</td><td><code>@string.parse_int(v) catch { _ =&gt; … }</code>, turning the exception into a message</td></tr>
+          <tr><td>Releasing resources</td><td><code>defer consumer.close()</code> / <code>defer producer.close()</code> — the connection is always closed</td></tr>
+          <tr><td>Task lifetime</td><td><code>@async.with_task_group(group =&gt; …)</code> — moonkafka's connections borrow a task group</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2><span data-l="zh">harness 的设计</span><span data-l="en">How the harness is built</span></h2>
+
+    <h3><span data-l="zh">命令是值，不是副作用</span><span data-l="en">Commands are values, not side effects</span></h3>
+
+    <p data-l="zh">
+      一条外部命令建模为 <code>Step</code>：用途、程序、参数。它由一批共享的构造函数生成，
+      <code>--dry-run</code> 只是把这些值<em>渲染</em>出来，真实运行才去<em>执行</em>它们。
+      因为两边同源，计划不可能与真实行为脱节。
+    </p>
+    <p data-l="en">
+      An external command is modelled as a <code>Step</code>: a purpose, a program, and its
+      arguments. Shared builders produce those values; <code>--dry-run</code> merely
+      <em>renders</em> them while a real run <em>executes</em> them. Because both sides come
+      from the same source, the plan cannot drift from what actually happens.
+    </p>
+
+<pre><code>struct Step {
+  purpose : String
+  program : String
+  args : Array[String]
+}</code></pre>
+
+    <h3><span data-l="zh">三种执行语义</span><span data-l="en">Three execution semantics</span></h3>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>函数</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>run_required</code></td><td>harness 依赖的前置步骤。失败就中止整个运行——后续阶段的结果没有意义</td></tr>
+          <tr><td><code>run_observed</code></td><td>结果本身就是断言的一部分。无论成败都记录退出码与耗时</td></tr>
+          <tr><td><code>run_until_success</code></td><td>对 produce 的有界重试，用来吸收 broker 的启动竞态</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Function</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>run_required</code></td><td>A step the harness depends on. Failure aborts the whole run — later phases could not mean anything</td></tr>
+          <tr><td><code>run_observed</code></td><td>The outcome is itself part of the assertion. Exit code and duration are recorded either way</td></tr>
+          <tr><td><code>run_until_success</code></td><td>Bounded retries around the produce, absorbing the broker's startup race</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span data-l="zh">断言与中止</span><span data-l="en">Assertions and aborting</span></h3>
+
+    <p data-l="zh">
+      <code>Runner</code> 只记三件事：跑了多少条断言、失败多少、是否已经中止。
+      <code>check</code> 记录一条结论；<code>fail</code> 额外把运行标记为中止，后续阶段直接跳过。
+    </p>
+    <p data-l="en">
+      <code>Runner</code> tracks three things: how many checks ran, how many failed, and
+      whether the run has already aborted. <code>check</code> records a verdict;
+      <code>fail</code> additionally marks the run aborted so later phases are skipped.
+    </p>
+
+    <p data-l="zh">
+      进程的失败通过 <code>suberror ItestError::Aborted(String)</code> 表达，并且刻意放在
+      <code>main</code> 的<strong>最后一行</strong>抛出——那时容器已经停掉、资源已经释放，
+      进程才带着一行可读的消息以非零码退出。
+    </p>
+    <p data-l="en">
+      Failure is expressed as <code>suberror ItestError::Aborted(String)</code>, raised
+      deliberately on the <em>last line</em> of <code>main</code>: by then the container is
+      stopped and resources are released, and the process exits non-zero with one readable
+      message.
+    </p>
+
+    <h3><span data-l="zh">外部命令不会挂住 harness</span><span data-l="en">External commands cannot hang the harness</span></h3>
+
+    <p data-l="zh">
+      每条命令都经 <code>@shell.Cmd(...).output(timeout_ms~)</code> 执行，带硬超时。
+      连「程序根本起不来」这种情况也算作一次普通的失败步骤（<code>exit_code = -1</code> 加一条说明），
+      而不是抛异常——比如一个没装的 compose provider。
+    </p>
+    <p data-l="en">
+      Every command runs through <code>@shell.Cmd(...).output(timeout_ms~)</code> under a
+      hard timeout. Even "the program could not be spawned at all" counts as an ordinary
+      failed step (<code>exit_code = -1</code> plus an explanation) rather than an
+      exception — a compose provider that is not installed, say.
+    </p>
+
+    <div class="pager">
+      <a href="itest.html">
+        <span class="pager-label"><span data-l="zh">上一页</span><span data-l="en">Previous</span></span>
+        <span class="pager-title"><span data-l="zh">← 集成测试</span><span data-l="en">← Integration test</span></span>
+      </a>
+      <a class="pager-next" href="troubleshooting.html">
+        <span class="pager-label"><span data-l="zh">下一页</span><span data-l="en">Next</span></span>
+        <span class="pager-title"><span data-l="zh">常见问题 →</span><span data-l="en">Troubleshooting →</span></span>
+      </a>
+    </div>
+
+  </main>
+</div>
+
+<footer class="site-footer">
+  <p>
+    <span data-l="zh">moonkafka demo 基于 <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1 构建。</span>
+    <span data-l="en">moonkafka demo is built on <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1.</span>
+  </p>
+  <p>
+    <a href="https://github.com/daqing/moonkafka-demo"><span data-l="zh">源码</span><span data-l="en">Source</span></a>
+    ·
+    <a href="https://github.com/daqing/moonkafka-demo/blob/main/README.md">README</a>
+  </p>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

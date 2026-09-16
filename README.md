@@ -4,6 +4,8 @@
 [`daqing/moonkafka`](https://github.com/daqing/moonkafka) 库连接 Apache Kafka、
 发送消息并读取消息。
 
+📖 **在线文档（中英双语）：<https://daqing.github.io/moonkafka-demo/>**
+
 本项目以 `moonkafka` 的 `v0.2.1` 标签提交
 `a9c93da25b47f008659b34a334f8d3758c47f285` 为 API 基线；该提交的模块版本为
 `0.2.1`，本项目通过 MoonBit 包管理器引用 `daqing/moonkafka@0.2.1`。

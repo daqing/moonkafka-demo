@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>集成测试 · moonkafka demo</title>
+<meta name="description" content="端到端集成测试：容器起 Kafka、两个阶段、全部选项与日志解读。">
+<script>
+  (function () {
+    var root = document.documentElement;
+    var theme = null, lang = null;
+    try {
+      theme = localStorage.getItem("moonkafka-demo-theme");
+      lang = localStorage.getItem("moonkafka-demo-lang");
+    } catch (e) {}
+    if (theme !== "light" && theme !== "dark") {
+      theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    lang = lang === "en" ? "en" : "zh";
+    root.setAttribute("data-theme", theme);
+    root.setAttribute("data-lang", lang);
+    root.setAttribute("lang", lang === "en" ? "en" : "zh-CN");
+  })();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="index.html">
+    <span class="brand-mark" aria-hidden="true"></span>
+    moonkafka demo<span class="brand-sub">docs</span>
+  </a>
+  <span class="header-spacer"></span>
+  <div class="header-actions">
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="sidebar">☰</button>
+    <div class="lang-switch" role="group" aria-label="切换到英文">
+      <button type="button" data-lang-set="zh" aria-pressed="true">中文</button>
+      <button type="button" data-lang-set="en" aria-pressed="false">EN</button>
+    </div>
+    <button class="theme-toggle" type="button">☽</button>
+    <a class="icon-link" href="https://github.com/daqing/moonkafka-demo" aria-label="GitHub">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="layout">
+
+  <nav class="sidebar" id="sidebar">
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">开始</span><span data-l="en">Start</span></p>
+      <a href="index.html"><span data-l="zh">概览</span><span data-l="en">Overview</span></a>
+      <a href="getting-started.html"><span data-l="zh">快速开始</span><span data-l="en">Getting started</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">使用</span><span data-l="en">Usage</span></p>
+      <a href="cli.html"><span data-l="zh">命令行参考</span><span data-l="en">CLI reference</span></a>
+      <a class="active" href="itest.html"><span data-l="zh">集成测试</span><span data-l="en">Integration test</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">深入</span><span data-l="en">Internals</span></p>
+      <a href="architecture.html"><span data-l="zh">设计与实现</span><span data-l="en">Design</span></a>
+      <a href="troubleshooting.html"><span data-l="zh">常见问题</span><span data-l="en">Troubleshooting</span></a>
+    </div>
+    <p class="sidebar-foot">
+      <span data-l="zh">基于 <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1</span>
+      <span data-l="en">Built on <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1</span>
+    </p>
+  </nav>
+
+  <main class="content">
+
+    <h1><span data-l="zh">集成测试</span><span data-l="en">Integration test</span></h1>
+
+    <p class="lead" data-l="zh">
+      用容器启动 Kafka、创建全新主题，再驱动真实的命令行程序走完「发送消息 → 消费消息」
+      的完整链路。
+    </p>
+    <p class="lead" data-l="en">
+      Starts Kafka in a container, creates fresh topics, then drives the real
+      command-line program through a full produce → consume round trip.
+    </p>
+
+    <h2><span data-l="zh">为什么不在 moon test 里</span><span data-l="en">Why it is not part of moon test</span></h2>
+
+    <p data-l="zh">
+      它需要容器运行时和一个真实 broker，因此<strong>不属于 <code>moon test</code></strong>，
+      只在被显式调用时运行，入口是 <code>make itest</code>。
+    </p>
+    <p data-l="en">
+      It needs a container runtime and a live broker, so it is deliberately
+      <strong>not part of <code>moon test</code></strong> and only runs when asked for —
+      through <code>make itest</code>.
+    </p>
+
+    <p data-l="zh">
+      不过 harness 里那些纯函数（命令渲染、输出解析、运行时候选列表等）有自己的白盒测试，
+      它们<em>是</em> <code>moon test</code> 的一部分。所以 <code>make ci</code> 覆盖的是
+      解析逻辑，端到端链路则由 <code>make itest</code> 覆盖，两者互补。
+    </p>
+    <p data-l="en">
+      The harness's pure helpers — command rendering, output parsing, the runtime
+      candidate list — do have white-box tests, and those <em>are</em> part of
+      <code>moon test</code>. So <code>make ci</code> covers the parsing logic while
+      <code>make itest</code> covers the end-to-end path; the two are complementary.
+    </p>
+
+    <h2><span data-l="zh">运行</span><span data-l="en">Running it</span></h2>
+
+<pre><code>make itest</code></pre>
+
+    <p data-l="zh">
+      <code>make itest</code> 先构建 CLI，再启动测试。想先看它到底会执行哪些命令，用
+      <code>make itest-plan</code>（等价于 <code>--dry-run</code>）——它不启动任何东西，
+      也不会碰你的容器。
+    </p>
+    <p data-l="en">
+      <code>make itest</code> builds the CLI and then runs the test. To see exactly which
+      commands it would execute, use <code>make itest-plan</code> (the same as
+      <code>--dry-run</code>): it starts nothing and touches no container.
+    </p>
+
+<pre><code>make itest-plan</code></pre>
+
+    <p data-l="zh">也可以绕开 Makefile 直接运行，所有选项照常可用：</p>
+    <p data-l="en">You can also bypass the Makefile; every option still applies:</p>
+
+<pre><code>moon run --target native tests/itest -- --target native --runtime docker</code></pre>
+
+    <div class="callout note" data-l="zh">
+      <span class="callout-title">--dry-run 与真实运行同源</span>
+      计划里的每一条命令都由真实运行所使用的同一批构造函数生成，因此两者不会各说各话，
+      计划不会随时间腐烂。
+    </div>
+    <div class="callout note" data-l="en">
+      <span class="callout-title">The plan and the run share one source</span>
+      Every command in the plan is produced by the same builders the real run uses, so
+      the two cannot disagree — the plan will not rot as the harness changes.
+    </div>
+
+    <h2><span data-l="zh">测试流程</span><span data-l="en">What a run does</span></h2>
+
+    <p data-l="zh">按顺序执行下面这些步骤：</p>
+    <p data-l="en">In order:</p>
+
+    <ol data-l="zh">
+      <li><strong>先构建 CLI</strong>。harness 执行的是构建产物，所以先编译一次——编译错误在这里暴露，后面的计时阶段也不必为构建买单。</li>
+      <li><strong>挑一个能用的容器运行时</strong>。</li>
+      <li><strong>启动 Kafka</strong>，然后轮询 broker 直到它接受管理命令。</li>
+      <li><strong>创建两个全新主题</strong>，并等待每个分区都选出 leader。</li>
+      <li><strong>阶段一</strong>：发送一条消息，再从 <code>earliest</code> 读回。</li>
+      <li><strong>阶段二</strong>：让 consumer 先开始轮询，之后再发送消息。</li>
+      <li><strong>收尾</strong>：默认停止 Kafka（<code>--keep</code> 可保留）。</li>
+      <li>打印 <code>checks=… failures=…</code>；有失败则以非零退出码结束。</li>
+    </ol>
+    <ol data-l="en">
+      <li><strong>Build the CLI first.</strong> The harness executes the built artifact, so it compiles once up front: a compile error surfaces here, and no timed phase then pays for a build.</li>
+      <li><strong>Pick a working container runtime.</strong></li>
+      <li><strong>Start Kafka</strong>, then poll the broker until it answers admin commands.</li>
+      <li><strong>Create two fresh topics</strong> and wait for every partition to elect a leader.</li>
+      <li><strong>Phase 1</strong>: produce a message, then read it back from <code>earliest</code>.</li>
+      <li><strong>Phase 2</strong>: let a consumer start polling, then produce to it.</li>
+      <li><strong>Tear down</strong>: Kafka is stopped unless <code>--keep</code> is given.</li>
+      <li>Print <code>checks=… failures=…</code>; a non-zero exit code follows any failure.</li>
+    </ol>
+
+    <p data-l="zh">
+      每次运行都使用唯一的主题名与唯一的消息内容（以 <code>@async.now()</code> 打时间戳），
+      因此上一次运行的残留数据不可能满足这一次的断言。
+    </p>
+    <p data-l="en">
+      Every run uses unique topic names and unique payloads, stamped with
+      <code>@async.now()</code>, so nothing a previous run left behind can satisfy an
+      assertion.
+    </p>
+
+    <h2><span data-l="zh">两个阶段</span><span data-l="en">The two phases</span></h2>
+
+    <h3><span data-l="zh">阶段一：先发送，再从头读回</span><span data-l="en">Phase 1: produce, then read back from the start</span></h3>
+
+    <p data-l="zh">
+      这一阶段不依赖任何时序：消息先落盘，之后才去读。断言包括：
+    </p>
+    <p data-l="en">
+      Nothing here depends on timing: the message lands first and is read afterwards.
+      The assertions:
+    </p>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>断言</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>生产者退出码为 0</td><td>produce 命令正常结束</td></tr>
+          <tr><td>生产者报告了偏移量</td><td>能从输出里解析出 <code>at offset N</code></td></tr>
+          <tr><td>首条记录位于偏移量 0</td><td>仅在 <code>--partitions 1</code>（默认）时检查：全新单分区主题的第一条记录必然是 0</td></tr>
+          <tr><td>消费者退出码为 0</td><td><code>--max-messages 1</code> 之后正常退出</td></tr>
+          <tr><td>读回了同一条记录</td><td>key 与 value 都与发送时一致</td></tr>
+          <tr><td>偏移量一致</td><td>消费到的偏移量等于写入时的偏移量</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Assertion</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>The producer exits 0</td><td>The produce command finished cleanly</td></tr>
+          <tr><td>The producer reports an offset</td><td>An <code>at offset N</code> value was parsed from its output</td></tr>
+          <tr><td>The first record sits at offset 0</td><td>Checked only with <code>--partitions 1</code> (the default): the first record of a fresh single-partition topic is necessarily 0</td></tr>
+          <tr><td>The consumer exits 0</td><td>It exited cleanly after <code>--max-messages 1</code></td></tr>
+          <tr><td>The record was read back</td><td>Both key and value match what was sent</td></tr>
+          <tr><td>The offsets agree</td><td>The consumed offset equals the produced one</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span data-l="zh">阶段二：消费的同时发送</span><span data-l="en">Phase 2: consuming while it is produced to</span></h3>
+
+    <p data-l="zh">
+      第二个主题在开始时是空的。consumer 先启动并开始轮询，<code>--live-delay-ms</code>
+      （默认 2000 毫秒）之后再发送消息。断言是：生产者退出码 0、消费者退出码 0，并且
+      <strong>消费者确实收到了这条记录</strong>。
+    </p>
+    <p data-l="en">
+      The second topic is empty when the run starts. The consumer is started first and
+      begins polling; the message is produced after <code>--live-delay-ms</code> (2000 ms
+      by default). The assertions: the producer exits 0, the consumer exits 0, and
+      <strong>the consumer did receive that record</strong>.
+    </p>
+
+    <p data-l="zh">
+      因为主题是空的，赢得竞态的 consumer 会在下一次 poll 读到它，输掉竞态的会在第一次
+      fetch 读到它——两种顺序都满足断言。<code>--live-delay-ms</code> 只是让常见路径成为
+      真正的「实时投递」，而不是一场竞态。
+    </p>
+    <p data-l="en">
+      Since the topic is empty, a consumer that wins the race reads the record on its
+      next poll and one that loses it reads it on its first fetch — both orderings
+      satisfy the assertions. <code>--live-delay-ms</code> merely makes the common case a
+      genuinely live delivery rather than a race.
+    </p>
+
+    <h2><span data-l="zh">容器运行时怎么选</span><span data-l="en">How the container runtime is chosen</span></h2>
+
+    <p data-l="zh">
+      默认（<code>--runtime auto</code>）按 <code>podman</code>、<code>docker</code>
+      的顺序逐个探测，用 <code>&lt;engine&gt; version</code> 确认它<em>真的能用</em>，
+      而不只是装了。这样就不会选中一个装了但没跑起来的引擎，然后在后面报一个莫名其妙的错。
+    </p>
+    <p data-l="en">
+      By default (<code>--runtime auto</code>) it probes <code>podman</code> then
+      <code>docker</code>, using <code>&lt;engine&gt; version</code> to confirm the engine
+      actually <em>works</em> rather than merely being installed — so it never picks an
+      installed-but-dead engine and fails later with a confusing error.
+    </p>
+
+    <p data-l="zh">锁定引擎后，再看它有没有 compose provider：</p>
+    <p data-l="en">Once an engine is locked in, it looks for a compose provider:</p>
+
+    <ol data-l="zh">
+      <li><code>&lt;engine&gt; compose version</code>（插件形式，如 <code>docker compose</code>）；</li>
+      <li><code>&lt;engine&gt;-compose version</code>（独立二进制，如 <code>docker-compose</code>）。</li>
+    </ol>
+    <ol data-l="en">
+      <li><code>&lt;engine&gt; compose version</code> — the plugin form, e.g. <code>docker compose</code>;</li>
+      <li><code>&lt;engine&gt;-compose version</code> — the standalone binary, e.g. <code>docker-compose</code>.</li>
+    </ol>
+
+    <p data-l="zh">
+      <code>--compose-bin</code> 可以指定一个二进制并跳过这两个探测。两条路径分别是：
+    </p>
+    <p data-l="en">
+      <code>--compose-bin</code> names a binary explicitly and skips both probes. The two
+      paths are:
+    </p>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>探测结果</th><th>行为</th></tr></thead>
+        <tbody>
+          <tr><td>有 compose provider</td><td>用 <code>docker-compose.kafka.yml</code> 启动：<code>&lt;provider&gt; -f docker-compose.kafka.yml up -d</code></td></tr>
+          <tr><td>没有 provider（常见的纯 podman 安装，<code>podman compose</code> 需要 <code>podman-compose</code>）</td><td>由 harness 直接执行 <code>podman run</code> 起单节点 broker，参数与 compose 文件里的 <code>kafka</code> 服务一致</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Probe result</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td>A compose provider answers</td><td>Start with <code>docker-compose.kafka.yml</code>: <code>&lt;provider&gt; -f docker-compose.kafka.yml up -d</code></td></tr>
+          <tr><td>No provider (a common podman setup, where <code>podman compose</code> needs <code>podman-compose</code>)</td><td>The harness drives <code>podman run</code> itself, with settings matching the <code>kafka</code> service in the compose file</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p data-l="zh">
+      直接 <code>run</code> 那条路径下，镜像标签从 compose 文件里读出来（也可以用
+      <code>--image</code> 覆盖），因此两条路径不会各写一份镜像版本。启动前会先
+      <code>inspect</code> 同名容器：已经在跑就直接复用，否则先 <code>rm -f</code> 清掉残留
+      再起。
+    </p>
+    <p data-l="en">
+      On the direct <code>run</code> path the image tag is read out of the compose file
+      (<code>--image</code> overrides it), so the two paths cannot drift on the image
+      version. Before starting, the container is <code>inspect</code>ed: if it is already
+      running it is reused, otherwise a stale one is <code>rm -f</code>ed first.
+    </p>
+
+    <div class="callout tip" data-l="zh">
+      <span class="callout-title">「&lt;engine&gt; is not usable」不是错误</span>
+      探测会逐个候选尝试，每一个失败的候选都会打印一行
+      <code>... podman is not usable</code>，这只是中间结果。只有<em>所有</em>候选都没通过，
+      才会打印 <code>FAIL no working container runtime</code>。
+      <code>make itest</code> 默认固定 <code>ITEST_RUNTIME=docker</code>，直接跳过探测，
+      所以那行日志根本不会出现。
+    </div>
+    <div class="callout tip" data-l="en">
+      <span class="callout-title">"&lt;engine&gt; is not usable" is not an error</span>
+      The probe walks its candidates in order and logs a
+      <code>... podman is not usable</code> line for each miss — an intermediate result.
+      Only when <em>every</em> candidate fails do you get
+      <code>FAIL no working container runtime</code>. <code>make itest</code> pins
+      <code>ITEST_RUNTIME=docker</code> and skips the probe entirely, so that line never
+      appears there.
+    </div>
+
+    <h2><span data-l="zh">选项</span><span data-l="en">Options</span></h2>
+
+    <h3><span data-l="zh">开关</span><span data-l="en">Flags</span></h3>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>开关</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td><code>--no-container</code></td><td>使用已在运行的 Kafka：跳过容器启停与建主题</td></tr>
+          <tr><td><code>--keep</code></td><td>结束时保留 Kafka 容器，便于排查</td></tr>
+          <tr><td><code>--dry-run</code></td><td>打印执行计划后直接退出，什么都不运行</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Flag</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td><code>--no-container</code></td><td>Use an already running Kafka: skip container lifecycle and topic creation</td></tr>
+          <tr><td><code>--keep</code></td><td>Leave the Kafka container running when the test finishes</td></tr>
+          <tr><td><code>--dry-run</code></td><td>Print the plan and exit without running anything</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span data-l="zh">取值选项</span><span data-l="en">Value options</span></h3>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>选项</th><th>默认值</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>--runtime</code></td><td><code>auto</code></td><td>容器运行时：<code>auto</code>、<code>podman</code>、<code>docker</code> 或一个路径</td></tr>
+          <tr><td><code>--compose-bin</code></td><td>空</td><td>compose 可执行文件；默认是 <code>&lt;runtime&gt; compose</code></td></tr>
+          <tr><td><code>--compose-file</code></td><td><code>docker-compose.kafka.yml</code></td><td>用来启动 Kafka 的 compose 文件</td></tr>
+          <tr><td><code>--run-mode</code></td><td><code>auto</code></td><td>如何管理 Kafka：<code>auto</code>、<code>compose</code> 或 <code>run</code></td></tr>
+          <tr><td><code>--image</code></td><td>空</td><td>直接 run 路径使用的镜像；默认从 compose 文件读取</td></tr>
+          <tr><td><code>--container</code></td><td><code>moonkafka-demo-kafka</code></td><td>Kafka 容器名</td></tr>
+          <tr><td><code>--host</code></td><td><code>127.0.0.1</code></td><td>CLI 连接的 broker 地址</td></tr>
+          <tr><td><code>--port</code></td><td><code>9092</code></td><td>CLI 连接的 broker 端口</td></tr>
+          <tr><td><code>--target</code></td><td><code>native</code></td><td>执行哪个目标的构建产物</td></tr>
+          <tr><td><code>--cli</code></td><td>空</td><td>要驱动的 CLI 二进制；默认是 native 调试构建</td></tr>
+          <tr><td><code>--repo</code></td><td><code>.</code></td><td>仓库根目录（<code>moon.mod</code> 所在处）</td></tr>
+          <tr><td><code>--topic</code></td><td>空</td><td>主题名；默认每次运行生成唯一名字</td></tr>
+          <tr><td><code>--partitions</code></td><td><code>1</code></td><td>harness 创建的主题的分区数</td></tr>
+          <tr><td><code>--timeout-secs</code></td><td><code>120</code></td><td>等待 Kafka 就绪的预算</td></tr>
+          <tr><td><code>--live-delay-ms</code></td><td><code>2000</code></td><td>阶段二里发送消息前的延迟</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Option</th><th>Default</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>--runtime</code></td><td><code>auto</code></td><td>Container runtime: <code>auto</code>, <code>podman</code>, <code>docker</code> or a path</td></tr>
+          <tr><td><code>--compose-bin</code></td><td>empty</td><td>Compose binary; the default is <code>&lt;runtime&gt; compose</code></td></tr>
+          <tr><td><code>--compose-file</code></td><td><code>docker-compose.kafka.yml</code></td><td>Compose file used to start Kafka</td></tr>
+          <tr><td><code>--run-mode</code></td><td><code>auto</code></td><td>How Kafka is managed: <code>auto</code>, <code>compose</code> or <code>run</code></td></tr>
+          <tr><td><code>--image</code></td><td>empty</td><td>Image for the direct run path; read from the compose file by default</td></tr>
+          <tr><td><code>--container</code></td><td><code>moonkafka-demo-kafka</code></td><td>Name of the Kafka container</td></tr>
+          <tr><td><code>--host</code></td><td><code>127.0.0.1</code></td><td>Broker host the CLI connects to</td></tr>
+          <tr><td><code>--port</code></td><td><code>9092</code></td><td>Broker port the CLI connects to</td></tr>
+          <tr><td><code>--target</code></td><td><code>native</code></td><td>Build target whose artifacts are executed</td></tr>
+          <tr><td><code>--cli</code></td><td>empty</td><td>CLI binary to drive; the native debug build by default</td></tr>
+          <tr><td><code>--repo</code></td><td><code>.</code></td><td>Repository root (where <code>moon.mod</code> lives)</td></tr>
+          <tr><td><code>--topic</code></td><td>empty</td><td>Topic name; a unique name per run by default</td></tr>
+          <tr><td><code>--partitions</code></td><td><code>1</code></td><td>Partitions for the topics this harness creates</td></tr>
+          <tr><td><code>--timeout-secs</code></td><td><code>120</code></td><td>Budget for waiting until Kafka is ready</td></tr>
+          <tr><td><code>--live-delay-ms</code></td><td><code>2000</code></td><td>Delay before producing in the live-delivery phase</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p data-l="zh">
+      默认要驱动的 CLI 二进制是
+      <code>_build/native/debug/build/cmd/main/main.exe</code>（随 <code>--target</code>
+      变化）。文件不存在时会明确报告「CLI 二进制缺失」，而不是抛出一个莫名的启动失败。
+    </p>
+    <p data-l="en">
+      The default CLI binary is
+      <code>_build/native/debug/build/cmd/main/main.exe</code> (following
+      <code>--target</code>). When it is missing you get an explicit "the CLI binary is
+      missing" failure rather than a mysterious spawn error.
+    </p>
+
+    <h2><span data-l="zh">常用组合</span><span data-l="en">Common invocations</span></h2>
+
+<pre><code>make itest ITEST_FLAGS="--keep"       # 保留容器，便于排查
+make itest ITEST_FLAGS="--dry-run"    # 只打印将要执行的命令
+make itest-plan                       # 同上
+make itest ITEST_RUNTIME=podman       # 改用 podman（默认 docker）</code></pre>
+
+    <h2><span data-l="zh">跑在已有的 Kafka 上</span><span data-l="en">Against a Kafka you already run</span></h2>
+
+    <p data-l="zh">
+      <code>--no-container</code> 跳过容器生命周期与建主题，因此必须自己指定一个<strong>已存在且为空</strong>
+      的主题：测试不会替你创建它，也不会替你清空它。这种情况下阶段二会被跳过——它需要一个空主题，
+      而 harness 不负责准备。
+    </p>
+    <p data-l="en">
+      <code>--no-container</code> skips the container lifecycle and topic creation, so you
+      must name an <strong>existing, empty</strong> topic: the test will not create it and
+      will not clear it. Phase 2 is skipped in this mode — it needs an empty topic, and the
+      harness is not the one that prepares it.
+    </p>
+
+<pre><code>moon run --target native tests/itest -- --no-container --topic &lt;an-existing-empty-topic&gt;</code></pre>
+
+    <h2><span data-l="zh">日志怎么读</span><span data-l="en">Reading the log</span></h2>
+
+    <p data-l="zh">日志把每条命令、退出码与耗时都逐条打印出来：</p>
+    <p data-l="en">Every command, exit code and duration is logged as it happens:</p>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>行</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td><code># &lt;说明&gt;</code></td><td>这条命令是干什么的</td></tr>
+          <tr><td><code>$ &lt;命令&gt;</code></td><td>将要执行的命令；失败的 CI 日志里能看到确切的命令行</td></tr>
+          <tr><td><code>... exit=0 in 412ms</code></td><td>命令成功及其耗时</td></tr>
+          <tr><td><code>... exit=1 after 88ms</code></td><td>命令失败，随后缩进打印 stderr/stdout</td></tr>
+          <tr><td><code>-&gt; ...</code></td><td>harness 的中间判断，如「容器运行时：docker」「broker 已就绪」</td></tr>
+          <tr><td><code>PASS / FAIL &lt;断言&gt;</code></td><td>一条断言的结论</td></tr>
+          <tr><td><code>checks=N failures=M</code></td><td>结束时的汇总；M &gt; 0 即非零退出</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Line</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code># &lt;purpose&gt;</code></td><td>What the command is for</td></tr>
+          <tr><td><code>$ &lt;command&gt;</code></td><td>The command about to run; a failing CI log shows the exact command line</td></tr>
+          <tr><td><code>... exit=0 in 412ms</code></td><td>The command succeeded, and how long it took</td></tr>
+          <tr><td><code>... exit=1 after 88ms</code></td><td>The command failed; its stderr/stdout follow, indented</td></tr>
+          <tr><td><code>-&gt; ...</code></td><td>An intermediate decision, e.g. "container runtime: docker" or "broker is ready"</td></tr>
+          <tr><td><code>PASS / FAIL &lt;assertion&gt;</code></td><td>The verdict for one assertion</td></tr>
+          <tr><td><code>checks=N failures=M</code></td><td>The final tally; M &gt; 0 means a non-zero exit</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span data-l="zh">第一次 produce 被拒是正常的</span><span data-l="en">The first produce being refused is normal</span></h3>
+
+    <p data-l="zh">
+      刚起来的 broker 会先接受管理命令、也接受建主题，但在能处理 produce 之前还有一小段窗口。
+      落在这个窗口里的<strong>第一次 produce 会被立即拒绝</strong>，报 moonkafka 的
+      <code>ProtocolError</code>，第二次就成功了。
+    </p>
+    <p data-l="en">
+      A broker that has just started answers admin commands and accepts topic creation
+      well before it can serve a produce. A produce that lands in that window fails fast
+      with moonkafka's <code>ProtocolError</code>; the next one succeeds.
+    </p>
+
+    <p data-l="zh">
+      harness 因此对 produce 做有界重试（最多 5 次，每次间隔 1 秒），并把每一次尝试都如实
+      打印出来。这样启动竞态不会污染断言，同时日志里仍然看得到它发生过。
+    </p>
+    <p data-l="en">
+      The harness therefore retries the produce a bounded number of times (5 attempts, one
+      second apart) and logs every attempt. The startup race stays out of the assertions
+      while remaining visible in the log.
+    </p>
+
+<pre><code>  # moonkafka cli
+  $ _build/native/debug/build/cmd/main/main.exe produce \
+      itest-1757923200 itest-value-a-1757923200 itest-key-1757923200 127.0.0.1 9092
+  ... exit=1 after 61ms
+  ! ProtocolError: ...
+  ... retrying (2/5): the previous attempt was refused
+  # moonkafka cli
+  $ _build/native/debug/build/cmd/main/main.exe produce \
+      itest-1757923200 itest-value-a-1757923200 itest-key-1757923200 127.0.0.1 9092
+  ... exit=0 in 74ms</code></pre>
+
+    <p data-l="zh">
+      与此同时，harness 在建完主题之后会轮询 <code>kafka-topics.sh --describe</code>，
+      直到没有分区停留在 <code>Leader: -1</code>，用这个把大部分竞态直接消掉，而不是靠
+      一段固定 sleep。
+    </p>
+    <p data-l="en">
+      In parallel, after creating a topic the harness polls
+      <code>kafka-topics.sh --describe</code> until no partition still reports
+      <code>Leader: -1</code> — removing most of that race without an arbitrary sleep.
+    </p>
+
+    <h2><span data-l="zh">就绪等待</span><span data-l="en">Readiness waits</span></h2>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>等待</th><th>做法</th><th>上限</th></tr></thead>
+        <tbody>
+          <tr><td>broker 就绪</td><td>每 2 秒执行一次 <code>kafka-topics.sh --list</code>，与 compose 的健康检查同一条命令</td><td><code>--timeout-secs</code>，默认 120 秒</td></tr>
+          <tr><td>分区选出 leader</td><td>每 1 秒执行一次 <code>--describe</code>，直到输出里不再有 <code>Leader: -1</code></td><td>60 秒</td></tr>
+          <tr><td>每一条外部命令</td><td>子进程带硬超时，超时即杀掉，不会把 harness 挂住</td><td>按步骤 60 秒–900 秒不等</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Wait</th><th>How</th><th>Bound</th></tr></thead>
+        <tbody>
+          <tr><td>Broker readiness</td><td><code>kafka-topics.sh --list</code> every 2 seconds — the very command the compose healthcheck uses</td><td><code>--timeout-secs</code>, 120 s by default</td></tr>
+          <tr><td>Partition leaders</td><td><code>--describe</code> every second until <code>Leader: -1</code> is gone from the output</td><td>60 s</td></tr>
+          <tr><td>Every external command</td><td>Children run under a hard timeout and are killed on expiry, so the harness cannot hang</td><td>60 s – 900 s depending on the step</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout tip" data-l="zh">
+      <span class="callout-title">容器残留怎么办</span>
+      用 <code>--keep</code> 留下的容器不会影响下一次运行：直接 <code>run</code> 的路径会先
+      <code>inspect</code> 再复用或清理。要手动开关 Kafka，用
+      <code>make kafka-up</code> / <code>make kafka-down</code>（引擎由
+      <code>RUNTIME</code> 选择）。<code>make itest</code> 管理自己的容器，不使用这两个目标。
+    </div>
+    <div class="callout tip" data-l="en">
+      <span class="callout-title">Leftover containers</span>
+      A container left behind by <code>--keep</code> does not disturb the next run: the
+      direct <code>run</code> path inspects it and reuses or clears it. For manual
+      control use <code>make kafka-up</code> / <code>make kafka-down</code> (the engine
+      comes from <code>RUNTIME</code>); <code>make itest</code> manages its own container
+      and does not use those targets.
+    </div>
+
+    <div class="pager">
+      <a href="cli.html">
+        <span class="pager-label"><span data-l="zh">上一页</span><span data-l="en">Previous</span></span>
+        <span class="pager-title"><span data-l="zh">← 命令行参考</span><span data-l="en">← CLI reference</span></span>
+      </a>
+      <a class="pager-next" href="architecture.html">
+        <span class="pager-label"><span data-l="zh">下一页</span><span data-l="en">Next</span></span>
+        <span class="pager-title"><span data-l="zh">设计与实现 →</span><span data-l="en">Design →</span></span>
+      </a>
+    </div>
+
+  </main>
+</div>
+
+<footer class="site-footer">
+  <p>
+    <span data-l="zh">moonkafka demo 基于 <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1 构建。</span>
+    <span data-l="en">moonkafka demo is built on <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1.</span>
+  </p>
+  <p>
+    <a href="https://github.com/daqing/moonkafka-demo"><span data-l="zh">源码</span><span data-l="en">Source</span></a>
+    ·
+    <a href="https://github.com/daqing/moonkafka-demo/blob/main/README.md">README</a>
+  </p>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

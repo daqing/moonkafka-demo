@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>常见问题 · moonkafka demo</title>
+<meta name="description" content="构建、运行与集成测试中的常见问题及处理办法。">
+<script>
+  (function () {
+    var root = document.documentElement;
+    var theme = null, lang = null;
+    try {
+      theme = localStorage.getItem("moonkafka-demo-theme");
+      lang = localStorage.getItem("moonkafka-demo-lang");
+    } catch (e) {}
+    if (theme !== "light" && theme !== "dark") {
+      theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    lang = lang === "en" ? "en" : "zh";
+    root.setAttribute("data-theme", theme);
+    root.setAttribute("data-lang", lang);
+    root.setAttribute("lang", lang === "en" ? "en" : "zh-CN");
+  })();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="index.html">
+    <span class="brand-mark" aria-hidden="true"></span>
+    moonkafka demo<span class="brand-sub">docs</span>
+  </a>
+  <span class="header-spacer"></span>
+  <div class="header-actions">
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="sidebar">☰</button>
+    <div class="lang-switch" role="group" aria-label="切换到英文">
+      <button type="button" data-lang-set="zh" aria-pressed="true">中文</button>
+      <button type="button" data-lang-set="en" aria-pressed="false">EN</button>
+    </div>
+    <button class="theme-toggle" type="button">☽</button>
+    <a class="icon-link" href="https://github.com/daqing/moonkafka-demo" aria-label="GitHub">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="layout">
+
+  <nav class="sidebar" id="sidebar">
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">开始</span><span data-l="en">Start</span></p>
+      <a href="index.html"><span data-l="zh">概览</span><span data-l="en">Overview</span></a>
+      <a href="getting-started.html"><span data-l="zh">快速开始</span><span data-l="en">Getting started</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">使用</span><span data-l="en">Usage</span></p>
+      <a href="cli.html"><span data-l="zh">命令行参考</span><span data-l="en">CLI reference</span></a>
+      <a href="itest.html"><span data-l="zh">集成测试</span><span data-l="en">Integration test</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">深入</span><span data-l="en">Internals</span></p>
+      <a href="architecture.html"><span data-l="zh">设计与实现</span><span data-l="en">Design</span></a>
+      <a class="active" href="troubleshooting.html"><span data-l="zh">常见问题</span><span data-l="en">Troubleshooting</span></a>
+    </div>
+    <p class="sidebar-foot">
+      <span data-l="zh">基于 <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1</span>
+      <span data-l="en">Built on <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1</span>
+    </p>
+  </nav>
+
+  <main class="content">
+
+    <h1><span data-l="zh">常见问题</span><span data-l="en">Troubleshooting</span></h1>
+
+    <p class="lead" data-l="zh">按「看到什么 → 为什么 → 怎么办」整理。</p>
+    <p class="lead" data-l="en">Organised as: what you see → why → what to do.</p>
+
+    <h2><span data-l="zh">构建</span><span data-l="en">Building</span></h2>
+
+    <h3><span data-l="zh">链接时找不到 zlib</span><span data-l="en">The link step cannot find zlib</span></h3>
+
+<pre><code>error: linking failed
+ld: library not found for -lz</code></pre>
+
+    <p data-l="zh">
+      原因：<code>cmd/main/moon.pkg</code> 为 native 目标指定了
+      <code>cc-link-flags = "-lz"</code>，而系统里没有 zlib 开发包。
+    </p>
+    <p data-l="en">
+      Cause: <code>cmd/main/moon.pkg</code> sets <code>cc-link-flags = "-lz"</code> for the
+      native target, and the zlib development package is not installed.
+    </p>
+
+    <p data-l="zh">处理：装上 zlib 的开发包（如 Debian/Ubuntu 的 <code>zlib1g-dev</code>、macOS 上 Xcode 命令行工具自带的版本），再重新构建。</p>
+    <p data-l="en">Fix: install zlib's development package (<code>zlib1g-dev</code> on Debian/Ubuntu; it ships with the Xcode command-line tools on macOS), then build again.</p>
+
+    <h3><span data-l="zh">目标不被支持</span><span data-l="en">The target is not supported</span></h3>
+
+<pre><code>error: target wasm-gc is not supported by this package</code></pre>
+
+    <p data-l="zh">
+      原因：moonkafka 的 socket 实现只支持 <code>native</code>，两个包都声明了
+      <code>supported_targets = "+native"</code>。
+    </p>
+    <p data-l="en">
+      Cause: moonkafka's socket layer supports <code>native</code> only, and both packages
+      declare <code>supported_targets = "+native"</code>.
+    </p>
+
+    <p data-l="zh">处理：每条命令都带上 <code>--target native</code>。</p>
+    <p data-l="en">Fix: pass <code>--target native</code> on every command.</p>
+
+    <h2><span data-l="zh">连接与读写</span><span data-l="en">Connecting and reading</span></h2>
+
+    <h3><span data-l="zh">主题不存在</span><span data-l="en">The topic does not exist</span></h3>
+
+    <p data-l="zh">
+      两个子命令都不建主题。对不存在的主题执行 <code>produce</code> 或
+      <code>consume</code> 都会失败。先按
+      <a href="getting-started.html">快速开始</a>里的命令把主题建好。
+    </p>
+    <p data-l="en">
+      Neither subcommand creates topics, so both <code>produce</code> and
+      <code>consume</code> fail against one that does not exist. Create it first, as shown
+      in <a href="getting-started.html">Getting started</a>.
+    </p>
+
+    <h3><span data-l="zh">consume 连上了却什么都不打印</span><span data-l="en">consume connects but prints nothing</span></h3>
+
+    <ul data-l="zh">
+      <li>默认从 <code>earliest</code> 开始读，所以空主题本来就什么都不会有——先在另一个终端发一条。</li>
+      <li>如果用了 <code>latest</code>，它只会读到连接之后写入的记录；之前的数据不会被读出来。</li>
+      <li>换个位置试试：<code>consume events 127.0.0.1 9092 earliest</code>。</li>
+      <li>确认主题里确实有数据：
+        <code>docker exec moonkafka-demo-kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic events --from-beginning --max-messages 1</code></li>
+    </ul>
+    <ul data-l="en">
+      <li>The default is <code>earliest</code>, so an empty topic legitimately prints nothing — produce from another terminal first.</li>
+      <li>With <code>latest</code> it only sees records written after it connected; earlier data is never read.</li>
+      <li>Try the other position: <code>consume events 127.0.0.1 9092 earliest</code>.</li>
+      <li>Confirm the topic actually holds data:
+        <code>docker exec moonkafka-demo-kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic events --from-beginning --max-messages 1</code></li>
+    </ul>
+
+    <h3><span data-l="zh">参数被当成了主机名</span><span data-l="en">An argument was taken for a host</span></h3>
+
+<pre><code>invalid port: latest</code></pre>
+
+    <p data-l="zh">
+      原因：参数是位置参数，<code>host</code> 与 <code>port</code> 必须成对出现；
+      <code>--max-messages</code> 还会从位置序列里消失，使它后面的参数前移。
+    </p>
+    <p data-l="en">
+      Cause: arguments are positional, so <code>host</code> and <code>port</code> must be
+      given as a pair; and <code>--max-messages</code> is removed from the positional
+      sequence, shifting whatever follows it up by one.
+    </p>
+
+    <p data-l="zh">处理：位置参数写在前面，flag 放在最后。两种常见写法：</p>
+    <p data-l="en">Fix: positionals first, flags last. Two shapes that work:</p>
+
+<pre><code>consume events 127.0.0.1 9092 latest --max-messages 1
+consume events --max-messages 1</code></pre>
+
+    <h2><span data-l="zh">本地 Kafka 容器</span><span data-l="en">The local Kafka container</span></h2>
+
+    <h3><span data-l="zh">镜像拉不下来</span><span data-l="en">The image will not pull</span></h3>
+
+    <pre><code>Error response from daemon: Get "https://registry-1.docker.io/v2/": ...
+i/o timeout</code></pre>
+
+    <p data-l="zh">
+      原因：网络到 Docker Hub 不通。这与项目无关，但会挡住
+      <code>docker compose up</code>。
+    </p>
+    <p data-l="en">
+      Cause: no working route to Docker Hub. Nothing to do with this project, but it does
+      block <code>docker compose up</code>.
+    </p>
+
+    <p data-l="zh">
+      处理：从可用的镜像站拉取，再打回 compose 文件里期望的标签。
+      仓库使用的镜像是 <code>apache/kafka:4.3.0</code>：
+    </p>
+    <p data-l="en">
+      Fix: pull from a reachable mirror and tag it back to the name the compose file
+      expects. The image this repository uses is <code>apache/kafka:4.3.0</code>:
+    </p>
+
+<pre><code>docker pull docker.m.daocloud.io/apache/kafka:4.3.0
+docker tag  docker.m.daocloud.io/apache/kafka:4.3.0 apache/kafka:4.3.0
+docker compose -f docker-compose.kafka.yml up -d</code></pre>
+
+    <p data-l="zh">
+      也可以给 Docker 守护进程配 <code>registry-mirrors</code>，或直接换一个镜像站。
+      集成测试走 <code>--image</code> 时同理，先把镜像准备好即可。
+    </p>
+    <p data-l="en">
+      You can also configure <code>registry-mirrors</code> for the Docker daemon, or use a
+      different mirror. The same applies to the integration test's <code>--image</code>:
+      get the image onto the machine first.
+    </p>
+
+    <h3><span data-l="zh">9092 端口被占用</span><span data-l="en">Port 9092 is already taken</span></h3>
+
+    <pre><code>Error response from daemon: ... bind: address already in use</code></pre>
+
+    <p data-l="zh">
+      原因：本机已经有别的 Kafka 或别的服务占着 9092。
+      处理：停掉占用的进程，或者两边都换一个端口——compose 文件里改
+      <code>ports</code> 与 <code>KAFKA_ADVERTISED_LISTENERS</code>，CLI 和集成测试则用
+      <code>--port</code>。
+    </p>
+    <p data-l="en">
+      Cause: something else on the machine already holds 9092.
+      Fix: stop it, or move both sides to another port — change <code>ports</code> and
+      <code>KAFKA_ADVERTISED_LISTENERS</code> in the compose file, and pass
+      <code>--port</code> to the CLI and the integration test.
+    </p>
+
+    <h3><span data-l="zh">容器起不来或反复重启</span><span data-l="en">The container will not start, or keeps restarting</span></h3>
+
+    <p data-l="zh">先看它的日志，再确认健康状态：</p>
+    <p data-l="en">Read its log first, then check its health:</p>
+
+<pre><code>docker logs moonkafka-demo-kafka
+docker inspect --format '{{.State.Health.Status}}' moonkafka-demo-kafka</code></pre>
+
+    <p data-l="zh">
+      健康检查就是每 5 秒跑一次
+      <code>kafka-topics.sh --bootstrap-server localhost:9092 --list</code>；
+      它一直不通过，通常说明 broker 还没选出 controller，或者被上面的端口问题绊住了。
+    </p>
+    <p data-l="en">
+      The healthcheck is <code>kafka-topics.sh --bootstrap-server localhost:9092 --list</code>
+      every 5 seconds. If it never passes, the broker has usually not elected a controller
+      yet, or is stuck on the port problem above.
+    </p>
+
+    <h2><span data-l="zh">集成测试</span><span data-l="en">The integration test</span></h2>
+
+    <h3><span data-l="zh">日志里的「podman is not usable」</span><span data-l="en">"podman is not usable" in the log</span></h3>
+
+<pre><code>  $ podman version
+  ... podman is not usable
+  $ docker version
+  -&gt; container runtime: docker</code></pre>
+
+    <p data-l="zh">
+      <strong>这不是错误。</strong>运行时探测按顺序逐个尝试候选，每个失败的候选都会留下这样
+      一行，随后它选中的引擎会打印 <code>-&gt; container runtime: …</code>。只有所有候选都不
+      可用时，才会出现 <code>FAIL no working container runtime</code>。
+    </p>
+    <p data-l="en">
+      <strong>This is not an error.</strong> The runtime probe walks its candidates in
+      order and leaves one such line per miss; the engine it settles on then prints
+      <code>-&gt; container runtime: …</code>. Only when every candidate fails do you get
+      <code>FAIL no working container runtime</code>.
+    </p>
+
+    <p data-l="zh">
+      想彻底不看这几行，直接指定引擎——<code>make itest</code> 默认就是这么做的
+      （<code>ITEST_RUNTIME=docker</code>）：
+    </p>
+    <p data-l="en">
+      To skip those lines entirely, name the engine — which is what <code>make itest</code>
+      does by default (<code>ITEST_RUNTIME=docker</code>):
+    </p>
+
+<pre><code>make itest ITEST_RUNTIME=podman
+moon run --target native tests/itest -- --runtime podman</code></pre>
+
+    <h3><span data-l="zh">第一次 produce 就失败了</span><span data-l="en">The very first produce fails</span></h3>
+
+<pre><code>  ... exit=1 after 61ms
+  ! ProtocolError: ...
+  ... retrying (2/5): the previous attempt was refused</code></pre>
+
+    <p data-l="zh">
+      <strong>预期行为。</strong>刚启动的 broker 会先接受管理命令与建主题，之后才具备处理
+      produce 的能力；落在这段窗口里的第一次 produce 会被立即拒绝。harness 因此做最多 5 次
+      的有界重试，并把每次尝试都打印出来。看到 <code>retrying</code> 之后紧跟
+      <code>exit=0</code>，就是正常的启动竞态。
+    </p>
+    <p data-l="en">
+      <strong>Expected.</strong> A freshly started broker answers admin commands and accepts
+      topic creation before it can serve a produce; a produce landing in that window is
+      refused immediately. The harness retries a bounded 5 times and logs every attempt, so
+      a <code>retrying</code> line followed by <code>exit=0</code> is the normal startup
+      race.
+    </p>
+
+    <p data-l="zh">
+      如果五次都失败，就值得看一眼 <code>--keep</code> 留下的容器，或者手动发一条确认 broker
+      是否真的可用。
+    </p>
+    <p data-l="en">
+      If all five fail, inspect the container left behind by <code>--keep</code>, or send a
+      message by hand to check whether the broker is really serving.
+    </p>
+
+    <h3><span data-l="zh">Kafka was not ready within Ns</span><span data-l="en">Kafka was not ready within Ns</span></h3>
+
+    <p data-l="zh">
+      原因：首次运行要拉镜像，或者机器比较慢，超出了默认的 120 秒预算。
+      处理：加大预算，或先把镜像拉好。
+    </p>
+    <p data-l="en">
+      Cause: a first run has to pull the image, or the machine is slow, and it exceeded the
+      default 120-second budget.
+      Fix: raise the budget, or pull the image beforehand.
+    </p>
+
+<pre><code>make itest ITEST_FLAGS="--timeout-secs 300"</code></pre>
+
+    <h3><span data-l="zh">the CLI binary is missing</span><span data-l="en">the CLI binary is missing</span></h3>
+
+<pre><code>  FAIL  the CLI binary is missing at _build/native/debug/build/cmd/main/main.exe;
+        build it first (moon build --target native) or pass --cli PATH</code></pre>
+
+    <p data-l="zh">
+      harness 执行的是构建产物，而不是再套一层 <code>moon run</code>——这样每个阶段都很快，
+      而且编译错误会在构建期而不是测试中途暴露。先构建，或用 <code>--cli</code> 指向别的
+      二进制。<code>make itest</code> 会自动先构建，所以这条通常只在直接调用时出现。
+    </p>
+    <p data-l="en">
+      The harness executes the built artifact rather than wrapping another
+      <code>moon run</code> — that keeps each phase fast and surfaces compile errors at
+      build time instead of mid-test. Build first, or point <code>--cli</code> at another
+      binary. <code>make itest</code> builds automatically, so this usually only appears
+      when calling the test directly.
+    </p>
+
+    <h3><span data-l="zh">--no-container 报错</span><span data-l="en">--no-container complains</span></h3>
+
+<pre><code>  FAIL  --no-container cannot create a topic; pass --topic &lt;a fresh, empty topic&gt;</code></pre>
+
+    <p data-l="zh">
+      这个模式跳过容器生命周期与建主题，所以必须自己指定一个已存在且为空的主题。阶段二也会
+      被跳过，因为它需要一个空主题。细节见<a href="itest.html">集成测试</a>。
+    </p>
+    <p data-l="en">
+      This mode skips the container lifecycle and topic creation, so you must name an
+      existing, empty topic yourself. Phase 2 is skipped too, since it needs an empty topic.
+      See <a href="itest.html">Integration test</a>.
+    </p>
+
+    <h3><span data-l="zh">没有 compose provider</span><span data-l="en">No compose provider</span></h3>
+
+<pre><code>  FAIL  --run-mode compose, but no compose provider answers for podman</code></pre>
+
+    <p data-l="zh">
+      <code>--run-mode compose</code> 强制走 compose，但这个引擎两个探测都没通过。要么装
+      <code>podman-compose</code>，要么改用 <code>--run-mode run</code>（harness 直接
+      <code>podman run</code>，不需要 provider），要么把它固定为一个二进制：
+    </p>
+    <p data-l="en">
+      <code>--run-mode compose</code> forces the compose path, but neither probe answered
+      for this engine. Install <code>podman-compose</code>, switch to
+      <code>--run-mode run</code> (the harness drives <code>podman run</code> itself and
+      needs no provider), or pin an explicit binary:
+    </p>
+
+<pre><code>moon run --target native tests/itest -- --run-mode run
+moon run --target native tests/itest -- --compose-bin /usr/local/bin/podman-compose</code></pre>
+
+    <h3><span data-l="zh">上一次运行留下的容器</span><span data-l="en">A container left by an earlier run</span></h3>
+
+    <p data-l="zh">
+      <code>--keep</code> 留下的容器不会影响下一次运行：直接 <code>run</code> 的路径会先
+      <code>inspect</code>，正在跑就复用，否则先 <code>rm -f</code> 再起。要手动清掉：
+    </p>
+    <p data-l="en">
+      A container left by <code>--keep</code> does not disturb the next run: the direct
+      <code>run</code> path inspects it first, reuses it if it is running, and otherwise
+      clears it with <code>rm -f</code> before starting. To remove it by hand:
+    </p>
+
+<pre><code>docker rm -f moonkafka-demo-kafka
+make kafka-down</code></pre>
+
+    <div class="callout tip" data-l="zh">
+      <span class="callout-title">排查前先看计划</span>
+      <code>make itest-plan</code> 会把将要执行的每一条命令按顺序打印出来，不启动任何东西。
+      大多数「它到底在干什么」的疑问都能在这里得到答案。
+    </div>
+    <div class="callout tip" data-l="en">
+      <span class="callout-title">Start with the plan</span>
+      <code>make itest-plan</code> prints every command a run would execute, in order,
+      without starting anything. Most "what is it actually doing" questions are answered
+      there.
+    </div>
+
+    <div class="pager">
+      <a href="architecture.html">
+        <span class="pager-label"><span data-l="zh">上一页</span><span data-l="en">Previous</span></span>
+        <span class="pager-title"><span data-l="zh">← 设计与实现</span><span data-l="en">← Design</span></span>
+      </a>
+      <a class="pager-next" href="index.html">
+        <span class="pager-label"><span data-l="zh">回到</span><span data-l="en">Back to</span></span>
+        <span class="pager-title"><span data-l="zh">概览 →</span><span data-l="en">Overview →</span></span>
+      </a>
+    </div>
+
+  </main>
+</div>
+
+<footer class="site-footer">
+  <p>
+    <span data-l="zh">moonkafka demo 基于 <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1 构建。</span>
+    <span data-l="en">moonkafka demo is built on <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1.</span>
+  </p>
+  <p>
+    <a href="https://github.com/daqing/moonkafka-demo"><span data-l="zh">源码</span><span data-l="en">Source</span></a>
+    ·
+    <a href="https://github.com/daqing/moonkafka-demo/blob/main/README.md">README</a>
+  </p>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

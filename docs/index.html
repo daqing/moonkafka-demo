@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>概览 · moonkafka demo</title>
+<meta name="description" content="用 MoonBit 与 daqing/moonkafka 连接 Apache Kafka 的生产者/消费者演示项目。">
+<script>
+  (function () {
+    var root = document.documentElement;
+    var theme = null, lang = null;
+    try {
+      theme = localStorage.getItem("moonkafka-demo-theme");
+      lang = localStorage.getItem("moonkafka-demo-lang");
+    } catch (e) {}
+    if (theme !== "light" && theme !== "dark") {
+      theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    lang = lang === "en" ? "en" : "zh";
+    root.setAttribute("data-theme", theme);
+    root.setAttribute("data-lang", lang);
+    root.setAttribute("lang", lang === "en" ? "en" : "zh-CN");
+  })();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="index.html">
+    <span class="brand-mark" aria-hidden="true"></span>
+    moonkafka demo<span class="brand-sub">docs</span>
+  </a>
+  <span class="header-spacer"></span>
+  <div class="header-actions">
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="sidebar">☰</button>
+    <div class="lang-switch" role="group" aria-label="切换到英文">
+      <button type="button" data-lang-set="zh" aria-pressed="true">中文</button>
+      <button type="button" data-lang-set="en" aria-pressed="false">EN</button>
+    </div>
+    <button class="theme-toggle" type="button">☽</button>
+    <a class="icon-link" href="https://github.com/daqing/moonkafka-demo" aria-label="GitHub">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="layout">
+
+  <nav class="sidebar" id="sidebar">
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">开始</span><span data-l="en">Start</span></p>
+      <a class="active" href="index.html"><span data-l="zh">概览</span><span data-l="en">Overview</span></a>
+      <a href="getting-started.html"><span data-l="zh">快速开始</span><span data-l="en">Getting started</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">使用</span><span data-l="en">Usage</span></p>
+      <a href="cli.html"><span data-l="zh">命令行参考</span><span data-l="en">CLI reference</span></a>
+      <a href="itest.html"><span data-l="zh">集成测试</span><span data-l="en">Integration test</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">深入</span><span data-l="en">Internals</span></p>
+      <a href="architecture.html"><span data-l="zh">设计与实现</span><span data-l="en">Design</span></a>
+      <a href="troubleshooting.html"><span data-l="zh">常见问题</span><span data-l="en">Troubleshooting</span></a>
+    </div>
+    <p class="sidebar-foot">
+      <span data-l="zh">基于 <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1</span>
+      <span data-l="en">Built on <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1</span>
+    </p>
+  </nav>
+
+  <main class="content">
+
+    <div class="hero">
+      <h1><span data-l="zh">概览</span><span data-l="en">Overview</span></h1>
+      <p class="lead" data-l="zh">
+        一个独立的 MoonBit 命令行演示项目：用开源库
+        <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a>
+        连接 Apache Kafka，发送消息并读取消息。
+      </p>
+      <p class="lead" data-l="en">
+        A standalone MoonBit command-line demo that uses the open-source
+        <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a>
+        library to connect to Apache Kafka, produce messages and consume them.
+      </p>
+      <ul class="badges">
+        <li>MoonBit</li>
+        <li>native target</li>
+        <li>Apache Kafka 4.x KRaft</li>
+        <li>daqing/moonkafka 0.2.1</li>
+      </ul>
+    </div>
+
+    <h2><span data-l="zh">这个项目做什么</span><span data-l="en">What it does</span></h2>
+
+    <p data-l="zh">
+      仓库提供一个可执行程序 <code>cmd/main</code>，带有 <code>produce</code> 与
+      <code>consume</code> 两个子命令。前者把一条消息写入指定主题，并打印 broker
+      返回的偏移量；后者持续从主题拉取记录，把每条记录的 offset、timestamp、key 与
+      value 逐条打印出来。
+    </p>
+    <p data-l="en">
+      The repository ships one executable, <code>cmd/main</code>, with two
+      subcommands. <code>produce</code> writes a single message to a topic and
+      prints the offset the broker assigned. <code>consume</code> keeps polling a
+      topic and prints each record's offset, timestamp, key and value.
+    </p>
+
+    <h3><span data-l="zh">职责边界</span><span data-l="en">Where the boundary is</span></h3>
+
+    <p data-l="zh">
+      所有 Kafka 行为——broker 连接、元数据处理、Kafka 协议、消息发送与拉取——都由
+      moonkafka 的 <code>Producer</code> 与 <code>Consumer</code> 完成。本项目只保留
+      命令行参数解析、UTF-8 文本转换和结果展示，<strong>没有实现任何自定义 Kafka
+      客户端逻辑</strong>。
+    </p>
+    <p data-l="en">
+      Every Kafka behaviour — broker connection, metadata handling, the Kafka
+      protocol, producing and fetching — comes from moonkafka's
+      <code>Producer</code> and <code>Consumer</code>. What is left here is
+      argument parsing, UTF-8 conversion and result rendering: <strong>no custom
+      Kafka client logic</strong> is implemented.
+    </p>
+
+    <h3><span data-l="zh">API 基线</span><span data-l="en">API baseline</span></h3>
+
+    <p data-l="zh">
+      项目以 moonkafka 的 <code>v0.2.1</code> 标签提交
+      <code>a9c93da25b47f008659b34a334f8d3758c47f285</code> 为 API 基线，通过 MoonBit
+      包管理器引用 <code>daqing/moonkafka@0.2.1</code>。
+    </p>
+    <p data-l="en">
+      The project takes moonkafka's <code>v0.2.1</code> tag — commit
+      <code>a9c93da25b47f008659b34a334f8d3758c47f285</code> — as its API baseline,
+      pulling it in as <code>daqing/moonkafka@0.2.1</code> through the MoonBit
+      package manager.
+    </p>
+
+    <h2><span data-l="zh">功能</span><span data-l="en">Features</span></h2>
+
+    <ul data-l="zh">
+      <li><code>produce</code> 与 <code>consume</code> 两个子命令，分别映射到 moonkafka 的 <code>Producer</code> 与 <code>Consumer</code></li>
+      <li>broker 地址与端口可覆盖，默认 <code>127.0.0.1:9092</code></li>
+      <li><code>consume</code> 支持从 <code>earliest</code> 或 <code>latest</code> 开始，并用 <code>--max-messages &lt;n&gt;</code> 打印 n 条后正常退出</li>
+      <li>producer 使用 <code>acks=-1</code>，等 broker 确认后打印消息偏移量</li>
+      <li>记录按 UTF-8 解码输出：key 为空显示 <code>&lt;null&gt;</code>，value 为空显示 <code>&lt;tombstone&gt;</code></li>
+      <li>端口、起始位置、<code>--max-messages</code> 在解析期校验，非法取值直接报错退出</li>
+      <li>端到端集成测试：用容器启动 Kafka、建全新主题，再驱动真实 CLI 走完「发送 → 消费」</li>
+      <li>附单节点 Kafka 4.3 KRaft 的 compose 配置，手动调试与集成测试共用</li>
+      <li>Makefile 覆盖类型检查、单元测试、格式化、构建与集成测试</li>
+    </ul>
+    <ul data-l="en">
+      <li><code>produce</code> and <code>consume</code> subcommands, mapping onto moonkafka's <code>Producer</code> and <code>Consumer</code></li>
+      <li>Broker host and port are overridable; the defaults are <code>127.0.0.1:9092</code></li>
+      <li><code>consume</code> starts from <code>earliest</code> or <code>latest</code>, and <code>--max-messages &lt;n&gt;</code> exits cleanly after printing n records</li>
+      <li>The producer uses <code>acks=-1</code> and prints the offset the broker acknowledged</li>
+      <li>Records are decoded as UTF-8: an empty key prints as <code>&lt;null&gt;</code>, an empty value as <code>&lt;tombstone&gt;</code></li>
+      <li>Ports, start position and <code>--max-messages</code> are validated while parsing; a bad value fails fast</li>
+      <li>An end-to-end integration test that starts Kafka in a container, creates fresh topics and drives the real CLI through produce → consume</li>
+      <li>A single-node Kafka 4.3 KRaft compose file shared by manual debugging and the integration test</li>
+      <li>Make targets for type-checking, unit tests, formatting, building and the integration test</li>
+    </ul>
+
+    <h2><span data-l="zh">项目结构</span><span data-l="en">Project layout</span></h2>
+
+<pre><code>moonkafka-demo/
+├── cmd/main/                 CLI: produce / consume
+│   ├── main.mbt              entry point, subcommand dispatch
+│   ├── cli.mbt               argument parsing and help text
+│   ├── producer_demo.mbt     produce subcommand
+│   ├── consumer_demo.mbt     consume subcommand
+│   └── cli_wbtest.mbt        unit tests for argument parsing
+├── tests/itest/              end-to-end integration test
+│   ├── main.mbt              phases and teardown
+│   ├── harness.mbt           Step / Runner, command execution, assertions
+│   ├── kafka.mbt             runtime detection, Kafka lifecycle, topics
+│   ├── options.mbt           integration-test options
+│   ├── cli.mbt               builds CLI commands, parses their output
+│   └── harness_wbtest.mbt    unit tests for the harness helpers
+├── docs/                     this site
+├── docker-compose.kafka.yml  single-node Kafka 4.3 KRaft
+├── Makefile                  day-to-day commands and itest targets
+└── moon.mod                  module definition and dependencies</code></pre>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>路径</th><th>职责</th></tr></thead>
+        <tbody>
+          <tr><td><code>cmd/main/main.mbt</code></td><td>入口：读取参数并分派到 <code>produce</code> / <code>consume</code> / 帮助</td></tr>
+          <tr><td><code>cmd/main/cli.mbt</code></td><td>参数解析：端口校验、起始位置、<code>--max-messages</code>、帮助文本</td></tr>
+          <tr><td><code>cmd/main/producer_demo.mbt</code></td><td><code>produce</code>：连接、发送并打印偏移量</td></tr>
+          <tr><td><code>cmd/main/consumer_demo.mbt</code></td><td><code>consume</code>：连接、轮询并逐条打印记录</td></tr>
+          <tr><td><code>cmd/main/cli_wbtest.mbt</code></td><td>参数解析的单元测试</td></tr>
+          <tr><td><code>tests/itest/main.mbt</code></td><td>集成测试主流程：两个阶段与收尾</td></tr>
+          <tr><td><code>tests/itest/harness.mbt</code></td><td><code>Step</code> 与 <code>Runner</code>：执行外部命令、打印日志、记录断言</td></tr>
+          <tr><td><code>tests/itest/kafka.mbt</code></td><td>容器运行时探测、Kafka 启停、建主题与就绪等待</td></tr>
+          <tr><td><code>tests/itest/options.mbt</code></td><td>集成测试的命令行选项</td></tr>
+          <tr><td><code>tests/itest/cli.mbt</code></td><td>拼装要执行的 CLI 命令，并解析其输出</td></tr>
+          <tr><td><code>tests/itest/harness_wbtest.mbt</code></td><td>harness 辅助函数的单元测试</td></tr>
+          <tr><td><code>docker-compose.kafka.yml</code></td><td>单节点 Kafka 4.3 KRaft broker</td></tr>
+          <tr><td><code>Makefile</code></td><td>日常命令与 itest 目标</td></tr>
+          <tr><td><code>moon.mod</code></td><td>模块定义与依赖</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Path</th><th>Responsibility</th></tr></thead>
+        <tbody>
+          <tr><td><code>cmd/main/main.mbt</code></td><td>Entry point: dispatch to <code>produce</code> / <code>consume</code> / help</td></tr>
+          <tr><td><code>cmd/main/cli.mbt</code></td><td>Argument parsing: port validation, start position, <code>--max-messages</code>, help text</td></tr>
+          <tr><td><code>cmd/main/producer_demo.mbt</code></td><td><code>produce</code>: connect, send, print the offset</td></tr>
+          <tr><td><code>cmd/main/consumer_demo.mbt</code></td><td><code>consume</code>: connect, poll, print each record</td></tr>
+          <tr><td><code>cmd/main/cli_wbtest.mbt</code></td><td>Unit tests for argument parsing</td></tr>
+          <tr><td><code>tests/itest/main.mbt</code></td><td>Integration-test flow: both phases and teardown</td></tr>
+          <tr><td><code>tests/itest/harness.mbt</code></td><td><code>Step</code> and <code>Runner</code>: run external commands, log, record assertions</td></tr>
+          <tr><td><code>tests/itest/kafka.mbt</code></td><td>Container-runtime detection, Kafka lifecycle, topic creation and readiness</td></tr>
+          <tr><td><code>tests/itest/options.mbt</code></td><td>Integration-test command-line options</td></tr>
+          <tr><td><code>tests/itest/cli.mbt</code></td><td>Builds the CLI commands to run and parses their output</td></tr>
+          <tr><td><code>tests/itest/harness_wbtest.mbt</code></td><td>Unit tests for the harness helpers</td></tr>
+          <tr><td><code>docker-compose.kafka.yml</code></td><td>Single-node Kafka 4.3 KRaft broker</td></tr>
+          <tr><td><code>Makefile</code></td><td>Day-to-day commands and itest targets</td></tr>
+          <tr><td><code>moon.mod</code></td><td>Module definition and dependencies</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout note" data-l="zh">
+      <span class="callout-title">只在 native 目标上构建</span>
+      moonkafka 的 socket 实现只支持 MoonBit <code>native</code> 目标，两个包的
+      <code>moon.pkg</code> 都声明了 <code>supported_targets = "+native"</code>。
+      下文所有命令都显式带上 <code>--target native</code>。
+    </div>
+    <div class="callout note" data-l="en">
+      <span class="callout-title">Native target only</span>
+      moonkafka's socket layer supports the MoonBit <code>native</code> target only,
+      and both packages declare <code>supported_targets = "+native"</code>. Every
+      command below passes <code>--target native</code> explicitly.
+    </div>
+
+    <h2><span data-l="zh">下一步</span><span data-l="en">Next steps</span></h2>
+
+    <ul class="card-grid" data-l="zh">
+      <li><a class="card" href="getting-started.html"><span class="card-title">快速开始</span><span class="card-desc">起一个本地 Kafka，构建并把消息发出去。</span></a></li>
+      <li><a class="card" href="cli.html"><span class="card-title">命令行参考</span><span class="card-desc">两个子命令的全部参数、输出格式与校验规则。</span></a></li>
+      <li><a class="card" href="itest.html"><span class="card-title">集成测试</span><span class="card-desc">容器起 Kafka、两个阶段与全部选项。</span></a></li>
+      <li><a class="card" href="architecture.html"><span class="card-title">设计与实现</span><span class="card-desc">代码如何组织，produce/consume 各自走哪条路径。</span></a></li>
+    </ul>
+    <ul class="card-grid" data-l="en">
+      <li><a class="card" href="getting-started.html"><span class="card-title">Getting started</span><span class="card-desc">Bring up a local Kafka, build, and send your first message.</span></a></li>
+      <li><a class="card" href="cli.html"><span class="card-title">CLI reference</span><span class="card-desc">Every argument, output format and validation rule for both subcommands.</span></a></li>
+      <li><a class="card" href="itest.html"><span class="card-title">Integration test</span><span class="card-desc">Container-managed Kafka, both phases, and every option.</span></a></li>
+      <li><a class="card" href="architecture.html"><span class="card-title">Design</span><span class="card-desc">How the code is organised and what each command actually does.</span></a></li>
+    </ul>
+
+    <div class="pager">
+      <span></span>
+      <a class="pager-next" href="getting-started.html">
+        <span class="pager-label"><span data-l="zh">下一页</span><span data-l="en">Next</span></span>
+        <span class="pager-title"><span data-l="zh">快速开始 →</span><span data-l="en">Getting started →</span></span>
+      </a>
+    </div>
+
+  </main>
+</div>
+
+<footer class="site-footer">
+  <p>
+    <span data-l="zh">moonkafka demo 基于 <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1 构建。</span>
+    <span data-l="en">moonkafka demo is built on <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1.</span>
+  </p>
+  <p>
+    <a href="https://github.com/daqing/moonkafka-demo"><span data-l="zh">源码</span><span data-l="en">Source</span></a>
+    ·
+    <a href="https://github.com/daqing/moonkafka-demo/blob/main/README.md">README</a>
+  </p>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>快速开始 · moonkafka demo</title>
+<meta name="description" content="前置条件、启动本地 Kafka、构建，并跑通第一条消息。">
+<script>
+  (function () {
+    var root = document.documentElement;
+    var theme = null, lang = null;
+    try {
+      theme = localStorage.getItem("moonkafka-demo-theme");
+      lang = localStorage.getItem("moonkafka-demo-lang");
+    } catch (e) {}
+    if (theme !== "light" && theme !== "dark") {
+      theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    lang = lang === "en" ? "en" : "zh";
+    root.setAttribute("data-theme", theme);
+    root.setAttribute("data-lang", lang);
+    root.setAttribute("lang", lang === "en" ? "en" : "zh-CN");
+  })();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="index.html">
+    <span class="brand-mark" aria-hidden="true"></span>
+    moonkafka demo<span class="brand-sub">docs</span>
+  </a>
+  <span class="header-spacer"></span>
+  <div class="header-actions">
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="sidebar">☰</button>
+    <div class="lang-switch" role="group" aria-label="切换到英文">
+      <button type="button" data-lang-set="zh" aria-pressed="true">中文</button>
+      <button type="button" data-lang-set="en" aria-pressed="false">EN</button>
+    </div>
+    <button class="theme-toggle" type="button">☽</button>
+    <a class="icon-link" href="https://github.com/daqing/moonkafka-demo" aria-label="GitHub">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="layout">
+
+  <nav class="sidebar" id="sidebar">
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">开始</span><span data-l="en">Start</span></p>
+      <a href="index.html"><span data-l="zh">概览</span><span data-l="en">Overview</span></a>
+      <a class="active" href="getting-started.html"><span data-l="zh">快速开始</span><span data-l="en">Getting started</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">使用</span><span data-l="en">Usage</span></p>
+      <a href="cli.html"><span data-l="zh">命令行参考</span><span data-l="en">CLI reference</span></a>
+      <a href="itest.html"><span data-l="zh">集成测试</span><span data-l="en">Integration test</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-group-title"><span data-l="zh">深入</span><span data-l="en">Internals</span></p>
+      <a href="architecture.html"><span data-l="zh">设计与实现</span><span data-l="en">Design</span></a>
+      <a href="troubleshooting.html"><span data-l="zh">常见问题</span><span data-l="en">Troubleshooting</span></a>
+    </div>
+    <p class="sidebar-foot">
+      <span data-l="zh">基于 <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1</span>
+      <span data-l="en">Built on <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1</span>
+    </p>
+  </nav>
+
+  <main class="content">
+
+    <h1><span data-l="zh">快速开始</span><span data-l="en">Getting started</span></h1>
+
+    <p class="lead" data-l="zh">从零到一条消息被发出去、又被读回来。</p>
+    <p class="lead" data-l="en">From nothing to a message produced and read back.</p>
+
+    <h2><span data-l="zh">前置条件</span><span data-l="en">Prerequisites</span></h2>
+
+    <ul data-l="zh">
+      <li>最新稳定版的 MoonBit 工具链；</li>
+      <li>原生 C 编译环境，以及 <strong>zlib</strong>——<code>cmd/main/moon.pkg</code> 为 native 目标设置了 <code>cc-link-flags = "-lz"</code>；</li>
+      <li>一个 Apache Kafka 4.x KRaft 集群。可以用仓库附带的 compose 配置起一个单节点 broker（需要容器运行时），也可以指向你自己已有的集群。</li>
+    </ul>
+    <ul data-l="en">
+      <li>A recent stable MoonBit toolchain;</li>
+      <li>A native C toolchain plus <strong>zlib</strong> — <code>cmd/main/moon.pkg</code> sets <code>cc-link-flags = "-lz"</code> for the native target;</li>
+      <li>An Apache Kafka 4.x KRaft cluster. Either bring up the single-node broker from the bundled compose file (needs a container runtime), or point the CLI at a cluster you already run.</li>
+    </ul>
+
+    <div class="callout note" data-l="zh">
+      <span class="callout-title">必须指定 native 目标</span>
+      moonkafka 的 socket 实现只支持 MoonBit <code>native</code> 目标，两个包都声明了
+      <code>supported_targets = "+native"</code>。省略 <code>--target native</code> 会在构建期失败。
+    </div>
+    <div class="callout note" data-l="en">
+      <span class="callout-title">The native target is required</span>
+      moonkafka's socket layer supports the MoonBit <code>native</code> target only, and
+      both packages declare <code>supported_targets = "+native"</code>. Omitting
+      <code>--target native</code> fails at build time.
+    </div>
+
+    <h2><span data-l="zh">启动本地 Kafka</span><span data-l="en">Start a local Kafka</span></h2>
+
+    <p data-l="zh">
+      仓库附带的配置与 moonkafka 主仓库一致：单节点、KRaft 模式、监听
+      <code>9092</code>，容器名为 <code>moonkafka-demo-kafka</code>，镜像
+      <code>apache/kafka:4.3.0</code>。
+    </p>
+    <p data-l="en">
+      The bundled configuration matches the moonkafka repository: a single node in
+      KRaft mode listening on <code>9092</code>, container
+      <code>moonkafka-demo-kafka</code>, image <code>apache/kafka:4.3.0</code>.
+    </p>
+
+<pre><code>docker compose -f docker-compose.kafka.yml up -d</code></pre>
+
+    <p data-l="zh">
+      容器自带健康检查，每 5 秒执行一次
+      <code>kafka-topics.sh --bootstrap-server localhost:9092 --list</code>，
+      命令成功即视为就绪。等它就绪后创建演示主题：
+    </p>
+    <p data-l="en">
+      The container healthchecks itself every 5 seconds by running
+      <code>kafka-topics.sh --bootstrap-server localhost:9092 --list</code>; the
+      first success means it is ready. Once it is, create the demo topic:
+    </p>
+
+<pre><code>docker exec moonkafka-demo-kafka /opt/kafka/bin/kafka-topics.sh \
+  --bootstrap-server localhost:9092 \
+  --create --if-not-exists \
+  --topic events \
+  --partitions 3 \
+  --replication-factor 1</code></pre>
+
+    <div class="callout warn" data-l="zh">
+      <span class="callout-title">主题必须先存在</span>
+      两个子命令都不建主题。对不存在的主题执行 <code>produce</code> 会失败，
+      <code>consume</code> 同样如此。请先按上面的命令建好主题，或让 broker 的自动建主题
+      策略处理。
+    </div>
+    <div class="callout warn" data-l="en">
+      <span class="callout-title">The topic must already exist</span>
+      Neither subcommand creates topics. Producing to a topic that does not exist
+      fails, and so does consuming. Create it first as above, or let the broker's
+      auto-create policy handle it.
+    </div>
+
+    <h2><span data-l="zh">构建</span><span data-l="en">Build</span></h2>
+
+<pre><code>moon build --target native</code></pre>
+
+    <p data-l="zh">
+      产物是 native 调试构建的可执行文件，路径为
+      <code>_build/native/debug/build/cmd/main/main.exe</code>。集成测试默认直接执行这个
+      二进制，因此它也是 harness 期望的路径。
+    </p>
+    <p data-l="en">
+      This produces the native debug executable at
+      <code>_build/native/debug/build/cmd/main/main.exe</code> — the same path the
+      integration test executes by default.
+    </p>
+
+    <h2><span data-l="zh">跑通第一条消息</span><span data-l="en">A first round trip</span></h2>
+
+    <p data-l="zh">
+      先在终端 A 启动 consumer。<code>consume</code> 会持续轮询，直到你用
+      <code>Ctrl-C</code> 停掉它，或者用 <code>--max-messages</code> 让它读够 n 条后正常退出。
+    </p>
+    <p data-l="en">
+      Start the consumer in terminal A first. <code>consume</code> keeps polling
+      until you stop it with <code>Ctrl-C</code>, or until <code>--max-messages</code>
+      lets it exit cleanly after n records.
+    </p>
+
+    <span class="code-label"><span data-l="zh">终端 A</span><span data-l="en">Terminal A</span></span>
+<pre><code>moon run --target native cmd/main -- consume events</code></pre>
+
+    <p data-l="zh">它会先打印一行说明，然后开始输出记录：</p>
+    <p data-l="en">It prints one line describing the session, then starts emitting records:</p>
+
+<pre><code>consuming topic "events" from 127.0.0.1:9092; press Ctrl-C to stop
+offset=0 timestamp=1757923200000 key=demo-key value=Hello from MoonBit</code></pre>
+
+    <p data-l="zh">
+      然后在终端 B 发送一条消息：
+    </p>
+    <p data-l="en">Then send a message from terminal B:</p>
+
+    <span class="code-label"><span data-l="zh">终端 B</span><span data-l="en">Terminal B</span></span>
+<pre><code>moon run --target native cmd/main -- produce events "Hello from MoonBit" demo-key</code></pre>
+
+    <p data-l="zh">producer 等待 broker 确认后，打印它写入的偏移量：</p>
+    <p data-l="en">The producer waits for the broker to acknowledge and prints the offset it wrote to:</p>
+
+<pre><code>sent to topic "events" at offset 0</code></pre>
+
+    <div class="callout tip" data-l="zh">
+      <span class="callout-title">只想读一条就走</span>
+      加上 <code>--max-messages 1</code>，consumer 打印完这一条就正常退出（退出码 0），
+      适合写脚本。这也是集成测试用的方式。
+    </div>
+    <div class="callout tip" data-l="en">
+      <span class="callout-title">Read one record and exit</span>
+      Add <code>--max-messages 1</code> and the consumer exits cleanly (code 0) right
+      after printing that record — handy in scripts, and exactly what the
+      integration test does.
+    </div>
+
+    <h2><span data-l="zh">用 make 跑</span><span data-l="en">Driving it with make</span></h2>
+
+    <p data-l="zh">
+      <code>Makefile</code> 把日常命令收成目标。直接运行 <code>make</code> 会打印目标列表。
+    </p>
+    <p data-l="en">
+      The <code>Makefile</code> collects the day-to-day commands into targets.
+      Running bare <code>make</code> prints the list.
+    </p>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>目标</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td><code>make check</code></td><td>类型检查，不做代码生成——最快的反馈</td></tr>
+          <tr><td><code>make check-strict</code></td><td>同上，但把警告视为错误；CI 应该以它为准</td></tr>
+          <tr><td><code>make test</code></td><td>运行测试套件（native）</td></tr>
+          <tr><td><code>make build</code></td><td>构建 native CLI</td></tr>
+          <tr><td><code>make fmt</code></td><td>就地格式化 MoonBit 源码</td></tr>
+          <tr><td><code>make fmt-check</code></td><td>只检查格式，不写入；有文件会被改动即失败</td></tr>
+          <tr><td><code>make ci</code></td><td><code>check-strict</code> + <code>test</code> + <code>fmt-check</code></td></tr>
+          <tr><td><code>make itest</code></td><td>端到端集成测试：容器起 Kafka 再驱动真实 CLI</td></tr>
+          <tr><td><code>make itest-plan</code></td><td>只打印集成测试将要执行的命令，不启动任何东西</td></tr>
+          <tr><td><code>make kafka-up</code></td><td>用 compose 启动 Kafka</td></tr>
+          <tr><td><code>make kafka-down</code></td><td>停止那个 Kafka</td></tr>
+          <tr><td><code>make run-producer</code></td><td>发送一条消息：<code>make run-producer VALUE="hello"</code></td></tr>
+          <tr><td><code>make run-consumer</code></td><td>消费主题直到 <code>Ctrl-C</code></td></tr>
+          <tr><td><code>make clean</code></td><td>删除构建产物</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Target</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>make check</code></td><td>Type-check without code generation — the fast feedback loop</td></tr>
+          <tr><td><code>make check-strict</code></td><td>The same, but warnings are errors; what CI should gate on</td></tr>
+          <tr><td><code>make test</code></td><td>Run the test suite (native)</td></tr>
+          <tr><td><code>make build</code></td><td>Build the native CLI</td></tr>
+          <tr><td><code>make fmt</code></td><td>Format MoonBit sources in place</td></tr>
+          <tr><td><code>make fmt-check</code></td><td>Verify formatting without writing; fails if any file would change</td></tr>
+          <tr><td><code>make ci</code></td><td><code>check-strict</code> + <code>test</code> + <code>fmt-check</code></td></tr>
+          <tr><td><code>make itest</code></td><td>End-to-end test: start Kafka in a container, drive the real CLI</td></tr>
+          <tr><td><code>make itest-plan</code></td><td>Print what the integration test would run, without starting anything</td></tr>
+          <tr><td><code>make kafka-up</code></td><td>Start Kafka via compose</td></tr>
+          <tr><td><code>make kafka-down</code></td><td>Stop that Kafka</td></tr>
+          <tr><td><code>make run-producer</code></td><td>Send one message: <code>make run-producer VALUE="hello"</code></td></tr>
+          <tr><td><code>make run-consumer</code></td><td>Consume the topic until <code>Ctrl-C</code></td></tr>
+          <tr><td><code>make clean</code></td><td>Remove build artifacts</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span data-l="zh">可覆盖的变量</span><span data-l="en">Overridable variables</span></h3>
+
+    <p data-l="zh">所有变量都可以在命令行上覆盖，例如 <code>make run-producer VALUE=hi TOPIC=orders</code>。</p>
+    <p data-l="en">Every variable can be overridden on the command line, e.g. <code>make run-producer VALUE=hi TOPIC=orders</code>.</p>
+
+    <div class="table-wrap" data-l="zh">
+      <table>
+        <thead><tr><th>变量</th><th>默认值</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>MOON</code></td><td><code>moon</code></td><td>moon 可执行文件</td></tr>
+          <tr><td><code>TARGET</code></td><td><code>native</code></td><td>构建目标</td></tr>
+          <tr><td><code>PKG</code></td><td><code>cmd/main</code></td><td>要运行 / 构建的包</td></tr>
+          <tr><td><code>TOPIC</code></td><td><code>events</code></td><td>演示主题</td></tr>
+          <tr><td><code>HOST</code></td><td><code>127.0.0.1</code></td><td>broker 地址</td></tr>
+          <tr><td><code>PORT</code></td><td><code>9092</code></td><td>broker 端口</td></tr>
+          <tr><td><code>KEY</code></td><td><code>demo-key</code></td><td><code>run-producer</code> 的消息 key</td></tr>
+          <tr><td><code>START</code></td><td><code>earliest</code></td><td><code>run-consumer</code> 的起始位置</td></tr>
+          <tr><td><code>RUNTIME</code></td><td>自动探测（podman 优先）</td><td><code>kafka-up</code> / <code>kafka-down</code> 使用的引擎</td></tr>
+          <tr><td><code>ITEST_RUNTIME</code></td><td><code>docker</code></td><td><code>make itest</code> 固定使用的引擎</td></tr>
+          <tr><td><code>ITEST_FLAGS</code></td><td>空</td><td>追加给集成测试的参数，如 <code>--keep</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" data-l="en">
+      <table>
+        <thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>MOON</code></td><td><code>moon</code></td><td>The moon executable</td></tr>
+          <tr><td><code>TARGET</code></td><td><code>native</code></td><td>Build target</td></tr>
+          <tr><td><code>PKG</code></td><td><code>cmd/main</code></td><td>Package to run or build</td></tr>
+          <tr><td><code>TOPIC</code></td><td><code>events</code></td><td>Demo topic</td></tr>
+          <tr><td><code>HOST</code></td><td><code>127.0.0.1</code></td><td>Broker host</td></tr>
+          <tr><td><code>PORT</code></td><td><code>9092</code></td><td>Broker port</td></tr>
+          <tr><td><code>KEY</code></td><td><code>demo-key</code></td><td>Message key for <code>run-producer</code></td></tr>
+          <tr><td><code>START</code></td><td><code>earliest</code></td><td>Start position for <code>run-consumer</code></td></tr>
+          <tr><td><code>RUNTIME</code></td><td>auto-detected (podman first)</td><td>Engine used by <code>kafka-up</code> / <code>kafka-down</code></td></tr>
+          <tr><td><code>ITEST_RUNTIME</code></td><td><code>docker</code></td><td>Engine <code>make itest</code> is pinned to</td></tr>
+          <tr><td><code>ITEST_FLAGS</code></td><td>empty</td><td>Extra flags for the integration test, e.g. <code>--keep</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout note" data-l="zh">
+      <span class="callout-title">RUNTIME 与 ITEST_RUNTIME 是两回事</span>
+      <code>RUNTIME</code> 只影响 <code>kafka-up</code> / <code>kafka-down</code>
+      这两个手动开关，默认走自动探测。<code>ITEST_RUNTIME</code> 只影响
+      <code>make itest</code>，默认固定 <code>docker</code>——因为集成测试自己的探测会
+      逐个候选尝试并打印「不可用」的中间日志。两者的原因见
+      <a href="itest.html">集成测试</a>。
+    </div>
+    <div class="callout note" data-l="en">
+      <span class="callout-title">RUNTIME and ITEST_RUNTIME are separate</span>
+      <code>RUNTIME</code> only affects the manual <code>kafka-up</code> /
+      <code>kafka-down</code> helpers and auto-detects by default.
+      <code>ITEST_RUNTIME</code> only affects <code>make itest</code> and is pinned to
+      <code>docker</code>, because the harness's own probe walks its candidates and
+      logs each miss. See <a href="itest.html">Integration test</a> for why.
+    </div>
+
+    <h3><span data-l="zh">便捷目标</span><span data-l="en">Convenience targets</span></h3>
+
+<pre><code>make run-producer VALUE="hello" TOPIC=events KEY=demo-key
+make run-consumer TOPIC=events START=latest</code></pre>
+
+    <p data-l="zh"><code>run-producer</code> 在缺少 <code>VALUE</code> 时会打印用法并以退出码 2 结束。</p>
+    <p data-l="en"><code>run-producer</code> prints its usage and exits 2 when <code>VALUE</code> is missing.</p>
+
+    <h2><span data-l="zh">停止 Kafka</span><span data-l="en">Stop Kafka</span></h2>
+
+<pre><code>docker compose -f docker-compose.kafka.yml down</code></pre>
+
+    <div class="pager">
+      <a href="index.html">
+        <span class="pager-label"><span data-l="zh">上一页</span><span data-l="en">Previous</span></span>
+        <span class="pager-title"><span data-l="zh">← 概览</span><span data-l="en">← Overview</span></span>
+      </a>
+      <a class="pager-next" href="cli.html">
+        <span class="pager-label"><span data-l="zh">下一页</span><span data-l="en">Next</span></span>
+        <span class="pager-title"><span data-l="zh">命令行参考 →</span><span data-l="en">CLI reference →</span></span>
+      </a>
+    </div>
+
+  </main>
+</div>
+
+<footer class="site-footer">
+  <p>
+    <span data-l="zh">moonkafka demo 基于 <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1 构建。</span>
+    <span data-l="en">moonkafka demo is built on <a href="https://github.com/daqing/moonkafka">daqing/moonkafka</a> v0.2.1.</span>
+  </p>
+  <p>
+    <a href="https://github.com/daqing/moonkafka-demo"><span data-l="zh">源码</span><span data-l="en">Source</span></a>
+    ·
+    <a href="https://github.com/daqing/moonkafka-demo/blob/main/README.md">README</a>
+  </p>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>
