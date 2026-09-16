@@ -11,6 +11,11 @@
   var THEME_KEY = "moonkafka-demo-theme";
   var LANG_KEY = "moonkafka-demo-lang";
 
+  // English is the default, so the HTML carries the English <title> and the
+  // Chinese one rides along on <html data-title-zh> for the toggle to swap in.
+  var DEFAULT_TITLE = document.title;
+  var ZH_TITLE = root.getAttribute("data-title-zh");
+
   var TEXT = {
     zh: {
       lang: "切换到英文",
@@ -39,7 +44,7 @@
   }
 
   function lang() {
-    return root.getAttribute("data-lang") === "en" ? "en" : "zh";
+    return root.getAttribute("data-lang") === "zh" ? "zh" : "en";
   }
 
   function t() {
@@ -82,6 +87,10 @@
     var switchEl = document.querySelector(".lang-switch");
     if (switchEl) {
       switchEl.setAttribute("aria-label", t().lang);
+    }
+
+    if (ZH_TITLE) {
+      document.title = next === "zh" ? ZH_TITLE : DEFAULT_TITLE;
     }
 
     var navToggle = document.querySelector(".nav-toggle");

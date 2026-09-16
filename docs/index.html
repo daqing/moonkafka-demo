@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh-CN" data-lang="zh">
+<html lang="en" data-lang="en" data-title-zh="概览 · moonkafka demo">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>概览 · moonkafka demo</title>
-<meta name="description" content="用 MoonBit 与 daqing/moonkafka 连接 Apache Kafka 的生产者/消费者演示项目。">
+<title>Overview · moonkafka demo</title>
+<meta name="description" content="A producer/consumer demo that connects to Apache Kafka with MoonBit and daqing/moonkafka.">
 <script>
   (function () {
     var root = document.documentElement;
@@ -16,7 +16,7 @@
     if (theme !== "light" && theme !== "dark") {
       theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
-    lang = lang === "en" ? "en" : "zh";
+    lang = lang === "zh" ? "zh" : "en";
     root.setAttribute("data-theme", theme);
     root.setAttribute("data-lang", lang);
     root.setAttribute("lang", lang === "en" ? "en" : "zh-CN");
@@ -34,9 +34,9 @@
   <span class="header-spacer"></span>
   <div class="header-actions">
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="sidebar">☰</button>
-    <div class="lang-switch" role="group" aria-label="切换到英文">
-      <button type="button" data-lang-set="zh" aria-pressed="true">中文</button>
-      <button type="button" data-lang-set="en" aria-pressed="false">EN</button>
+    <div class="lang-switch" role="group" aria-label="Switch to Chinese">
+      <button type="button" data-lang-set="zh" aria-pressed="false">中文</button>
+      <button type="button" data-lang-set="en" aria-pressed="true">EN</button>
     </div>
     <button class="theme-toggle" type="button">☽</button>
     <a class="icon-link" href="https://github.com/daqing/moonkafka-demo" aria-label="GitHub">
