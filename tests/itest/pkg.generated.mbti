@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "daqing/moonkafka-demo/tests/itest"
+
+// Values
+
+// Errors
+type ItestError
+
+// Types and methods
+type Cluster
+
+type ComposeProvider
+
+type ConsumerRecord
+
+type Options
+
+type Runner
+
+type Step
+
+type StepResult
+
+// Type aliases
+
+// Traits
