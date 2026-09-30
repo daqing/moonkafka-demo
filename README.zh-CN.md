@@ -134,6 +134,12 @@ harness 先编译 CLI 再直接执行该二进制（不再套一层 `moon run`�
 主题，但**第一个 produce 可能被立即拒绝**（`daqing/moonkafka.ProtocolError`），第二次即可成功。
 harness 因此对 produce 做有界重试（最多 5 次），并在日志里如实打印每一次重试。
 
+## 持续集成
+
+`.github/workflows/ci.yml` 在 push 到 `main`、`develop` 以及每个 pull request 时运行：把警告
+视为错误的类型检查、构建 native CLI、跑单元测试、检查格式——与本地 `make ci` 跑的是同一套
+步骤。集成测试不在其中：它需要容器运行时和一个真实 broker。
+
 ## 命令行
 
 ```text

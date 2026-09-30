@@ -59,8 +59,8 @@ fmt:
 fmt-check:
 	$(MOON) fmt --check
 
-# Everything CI should run.
-ci: check-strict test fmt-check
+# Everything CI runs; .github/workflows/ci.yml invokes these same targets.
+ci: check-strict build test fmt-check
 
 # End-to-end test: start Kafka in a container, then drive the real CLI against it.
 itest: build
@@ -101,7 +101,7 @@ help:
 	@echo '  make build         build the native CLI'
 	@echo '  make fmt           format MoonBit sources in place'
 	@echo '  make fmt-check     verify formatting (no writes)'
-	@echo '  make ci            check-strict + test + fmt-check'
+	@echo '  make ci            check-strict + build + test + fmt-check'
 	@echo '  make itest         end-to-end test against Kafka (ITEST_RUNTIME=$(ITEST_RUNTIME))'
 	@echo '  make itest-plan    print the itest plan without running it'
 	@echo '  make kafka-up      start Kafka via compose (RUNTIME=$(RUNTIME))'

@@ -223,12 +223,12 @@ offset=0 timestamp=1757923200000 key=demo-key value=Hello from MoonBit</code></p
         <thead><tr><th>目标</th><th>作用</th></tr></thead>
         <tbody>
           <tr><td><code>make check</code></td><td>类型检查，不做代码生成——最快的反馈</td></tr>
-          <tr><td><code>make check-strict</code></td><td>同上，但把警告视为错误；CI 应该以它为准</td></tr>
+          <tr><td><code>make check-strict</code></td><td>同上，但把警告视为错误；CI 用的就是它</td></tr>
           <tr><td><code>make test</code></td><td>运行测试套件（native）</td></tr>
           <tr><td><code>make build</code></td><td>构建 native CLI</td></tr>
           <tr><td><code>make fmt</code></td><td>就地格式化 MoonBit 源码</td></tr>
           <tr><td><code>make fmt-check</code></td><td>只检查格式，不写入；有文件会被改动即失败</td></tr>
-          <tr><td><code>make ci</code></td><td><code>check-strict</code> + <code>test</code> + <code>fmt-check</code></td></tr>
+          <tr><td><code>make ci</code></td><td><code>check-strict</code> + <code>build</code> + <code>test</code> + <code>fmt-check</code></td></tr>
           <tr><td><code>make itest</code></td><td>端到端集成测试：容器起 Kafka 再驱动真实 CLI</td></tr>
           <tr><td><code>make itest-plan</code></td><td>只打印集成测试将要执行的命令，不启动任何东西</td></tr>
           <tr><td><code>make kafka-up</code></td><td>用 compose 启动 Kafka</td></tr>
@@ -244,12 +244,12 @@ offset=0 timestamp=1757923200000 key=demo-key value=Hello from MoonBit</code></p
         <thead><tr><th>Target</th><th>What it does</th></tr></thead>
         <tbody>
           <tr><td><code>make check</code></td><td>Type-check without code generation — the fast feedback loop</td></tr>
-          <tr><td><code>make check-strict</code></td><td>The same, but warnings are errors; what CI should gate on</td></tr>
+          <tr><td><code>make check-strict</code></td><td>The same, but warnings are errors; what CI gates on</td></tr>
           <tr><td><code>make test</code></td><td>Run the test suite (native)</td></tr>
           <tr><td><code>make build</code></td><td>Build the native CLI</td></tr>
           <tr><td><code>make fmt</code></td><td>Format MoonBit sources in place</td></tr>
           <tr><td><code>make fmt-check</code></td><td>Verify formatting without writing; fails if any file would change</td></tr>
-          <tr><td><code>make ci</code></td><td><code>check-strict</code> + <code>test</code> + <code>fmt-check</code></td></tr>
+          <tr><td><code>make ci</code></td><td><code>check-strict</code> + <code>build</code> + <code>test</code> + <code>fmt-check</code></td></tr>
           <tr><td><code>make itest</code></td><td>End-to-end test: start Kafka in a container, drive the real CLI</td></tr>
           <tr><td><code>make itest-plan</code></td><td>Print what the integration test would run, without starting anything</td></tr>
           <tr><td><code>make kafka-up</code></td><td>Start Kafka via compose</td></tr>
@@ -260,6 +260,20 @@ offset=0 timestamp=1757923200000 key=demo-key value=Hello from MoonBit</code></p
         </tbody>
       </table>
     </div>
+
+    <h3><span data-l="zh">持续集成</span><span data-l="en">Continuous integration</span></h3>
+
+    <p data-l="zh">
+      <code>.github/workflows/ci.yml</code> 在 push（<code>main</code>、<code>develop</code>）
+      和每个 pull request 上依次跑上面这几个目标：检查、构建、测试、格式检查。
+      集成测试不在这里跑——它需要容器运行时和一个真实 broker。
+    </p>
+    <p data-l="en">
+      <code>.github/workflows/ci.yml</code> runs the targets above in order —
+      check, build, test, formatting — on every push to <code>main</code> or
+      <code>develop</code> and on every pull request. The integration test is
+      not part of it: that one needs a container runtime and a live broker.
+    </p>
 
     <h3><span data-l="zh">可覆盖的变量</span><span data-l="en">Overridable variables</span></h3>
 

@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  check-build-test:
+    name: Check, build & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.moon/bin:$PATH"
+          moon version --all
+          moon update
+
+      # The native target links moonkafka's compression package with -lz.
+      - name: Install zlib
+        run: sudo apt-get update && sudo apt-get install -y zlib1g-dev
+
+      # The four steps below are the targets `make ci` is made of; keep the
+      # two lists in step. The integration test (`make itest`) is not run
+      # here: it needs a container runtime and a live broker.
+      - name: Check
+        run: make check-strict
+
+      - name: Build
+        run: make build
+
+      - name: Test
+        run: make test
+
+      - name: Check formatting
+        run: make fmt-check

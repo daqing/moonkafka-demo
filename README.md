@@ -149,6 +149,13 @@ creation, but **the very first produce may be rejected outright**
 (`daqing/moonkafka.ProtocolError`) — the second one succeeds. The harness therefore retries
 produce with a bounded limit (5 attempts at most) and prints every retry faithfully.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main` or `develop` and on every pull request:
+type-check with warnings as errors, build the native CLI, run the unit tests, and verify
+formatting — the same steps `make ci` runs locally. The integration test is not part of it: it
+needs a container runtime and a live broker.
+
 ## Command line
 
 ```text
