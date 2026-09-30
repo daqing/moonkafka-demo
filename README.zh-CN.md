@@ -6,9 +6,10 @@
 
 📖 **在线文档（中英双语）：<https://daqing.github.io/moonkafka-demo/>**
 
-本项目以 `moonkafka` 的 `v0.3.3` 标签提交
-`6e0f45f18ae9e5d9b16e30ddf9ac0533a7cdd602` 为 API 基线；该提交的模块版本为
-`0.3.3`，本项目通过 MoonBit 包管理器引用 `daqing/moonkafka@0.3.3`。
+本项目通过 MoonBit 包管理器引用 `daqing/moonkafka@0.3.4`。上游称该版本为纯文档发布——
+没有任何库代码改动——因此 API 基线仍是 `v0.3.3` 标签提交
+`6e0f45f18ae9e5d9b16e30ddf9ac0533a7cdd602`。`0.3.4` 只发布在 mooncakes.io 上，
+没有自己的 tag。
 
 `cmd/main` 中只有命令行参数解析、UTF-8 文本转换和结果展示。Broker 连接、元数据
 处理、Kafka 协议、消息发送和消息拉取均由 `moonkafka` 的 `Producer`、`Consumer`
