@@ -11,6 +11,6 @@ preferred_target = "native"
 description = "Producer and consumer demo for daqing/moonkafka"
 
 import {
-  "daqing/moonkafka@0.3.3",
+  "daqing/moonkafka@0.3.4",
   "moonbitlang/async@0.22.4",
 }

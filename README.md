@@ -6,10 +6,10 @@ produce messages, and consume them.
 
 📖 **Documentation site (English and Chinese): <https://daqing.github.io/moonkafka-demo/>**
 
-The project takes the `v0.3.3` tag of `moonkafka`, commit
-`6e0f45f18ae9e5d9b16e30ddf9ac0533a7cdd602`, as its API baseline; that commit carries module
-version `0.3.3`, and this project pulls in `daqing/moonkafka@0.3.3` through the MoonBit package
-manager.
+The project pulls in `daqing/moonkafka@0.3.4` through the MoonBit package manager. Upstream calls
+that release documentation-only — no library code changed — so the API baseline is still the
+`v0.3.3` tag, commit `6e0f45f18ae9e5d9b16e30ddf9ac0533a7cdd602`. `0.3.4` lives on mooncakes.io
+only; it carries no tag of its own.
 
 `cmd/main` holds nothing but command-line argument parsing, UTF-8 text conversion, and result
 display. Broker connections, metadata handling, the Kafka protocol, message production, and
