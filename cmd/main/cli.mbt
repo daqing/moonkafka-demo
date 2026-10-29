@@ -23,7 +23,7 @@ fn print_help() -> Unit {
 }
 
 ///|
-fn parse_port(args : Array[String], index : Int) -> Int {
+fn parse_port(args : Array[String], index : Int32) -> Int32 {
   match args.get(index) {
     Some(value) => {
       let port = @string.parse_int(value) catch {
@@ -59,8 +59,8 @@ fn parse_start_from(value : String?) -> @moonkafka.StartFrom {
 /// returns the limit together with the remaining positional arguments, in
 /// order. Returns `None` when the flag is absent, in which case the consumer
 /// polls until it is interrupted.
-fn take_max_messages(args : Array[String]) -> (Int?, Array[String]) {
-  let mut limit : Int? = None
+fn take_max_messages(args : Array[String]) -> (Int32?, Array[String]) {
+  let mut limit : Int32? = None
   let positionals : Array[String] = []
   let mut index = 0
   while index < args.length() {
@@ -81,7 +81,7 @@ fn take_max_messages(args : Array[String]) -> (Int?, Array[String]) {
           }
         }
       }
-      let value : Int = @string.parse_int(text) catch {
+      let value : Int32 = @string.parse_int(text) catch {
         _ => {
           println("invalid --max-messages value: \{text}")
           abort("")

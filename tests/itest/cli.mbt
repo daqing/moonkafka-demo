@@ -24,7 +24,7 @@ fn consume_step(
   cli : String,
   topic : String,
   start : String,
-  limit : Int,
+  limit : Int32,
 ) -> Step {
   cli_step(opt, cli, [
     "consume",
@@ -41,7 +41,7 @@ fn consume_step(
 /// Parses a non-negative decimal integer, returning `None` for anything else.
 /// Deliberately dependency-free so the parsing rules can be unit-tested without
 /// a broker.
-fn parse_nonneg_int(text : StringView) -> Int? {
+fn parse_nonneg_int(text : StringView) -> Int32? {
   let mut value = 0
   let mut index = 0
   while index < text.length() {
@@ -60,7 +60,7 @@ fn parse_nonneg_int(text : StringView) -> Int? {
 
 ///|
 /// Reads the offset out of a `sent to topic "<topic>" at offset <n>` line.
-fn parse_sent_offset(stdout : String) -> Int? {
+fn parse_sent_offset(stdout : String) -> Int32? {
   for line in stdout.split("\n") {
     guard line.split_once(" at offset ") is Some((_, tail)) else { continue }
     match parse_nonneg_int(tail.trim()) {
@@ -74,7 +74,7 @@ fn parse_sent_offset(stdout : String) -> Int? {
 ///|
 /// One record line as the consumer prints it.
 struct ConsumerRecord {
-  offset : Int
+  offset : Int32
   key : String
   value : String
 }
@@ -125,8 +125,8 @@ fn offset_of(
   records : Array[ConsumerRecord],
   key : String,
   value : String,
-) -> Int? {
-  let mut found : Int? = None
+) -> Int32? {
+  let mut found : Int32? = None
   for record in records {
     if record.key == key && record.value == value {
       found = Some(record.offset)
