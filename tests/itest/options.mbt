@@ -13,7 +13,7 @@ struct Options {
   image : String
   container : String
   host : String
-  port : Int
+  port : Int32
   /// Repository root; `moon` and the compose file are resolved from here.
   repo : String
   /// Build target whose artifacts the harness executes.
@@ -26,9 +26,9 @@ struct Options {
   topic_live : String
   /// Whether the caller named the topic, or it was generated per run.
   topic_given : Bool
-  partitions : Int
-  timeout_secs : Int
-  live_delay_ms : Int
+  partitions : Int32
+  timeout_secs : Int32
+  live_delay_ms : Int32
   no_container : Bool
   keep : Bool
   dry_run : Bool
@@ -47,7 +47,7 @@ fn option(
 }
 
 ///|
-fn int_option(matches : @argparse.Matches, key : String) -> Int raise {
+fn int_option(matches : @argparse.Matches, key : String) -> Int32 raise {
   @string.parse_int(option(matches, key, "0"))
 }
 

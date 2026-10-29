@@ -42,7 +42,7 @@ fn render_step(step : Step) -> String {
 /// not installed, say). For the harness that is an ordinary failed step, not an
 /// exception.
 struct StepResult {
-  exit_code : Int
+  exit_code : Int32
   stdout : String
   stderr : String
 }
@@ -50,7 +50,11 @@ struct StepResult {
 ///|
 /// Runs the step with a hard timeout and captured output. `timeout_ms` kills the
 /// child rather than hanging the harness.
-async fn step_output(step : Step, cwd : String, timeout_ms : Int) -> StepResult {
+async fn step_output(
+  step : Step,
+  cwd : String,
+  timeout_ms : Int32,
+) -> StepResult {
   let output = @shell.Cmd(step.program, step.args, cwd~, env={ "NO_COLOR": "1" }).output(
     timeout_ms~,
   ) catch {
@@ -78,8 +82,8 @@ fn announce(step : Step) -> Unit {
 
 ///|
 struct Runner {
-  mut checks : Int
-  mut failures : Int
+  mut checks : Int32
+  mut failures : Int32
   /// Set when a prerequisite failed; later phases are then skipped, because
   /// their results could not mean anything.
   mut aborted : Bool
@@ -134,7 +138,7 @@ async fn run_required(
   runner : Runner,
   step : Step,
   cwd : String,
-  timeout_ms : Int,
+  timeout_ms : Int32,
   what : String,
 ) -> Bool {
   announce(step)
@@ -154,7 +158,7 @@ async fn run_required(
 async fn run_observed(
   step : Step,
   cwd : String,
-  timeout_ms : Int,
+  timeout_ms : Int32,
 ) -> StepResult {
   announce(step)
   let started = @async.now()
@@ -181,8 +185,8 @@ async fn run_observed(
 async fn run_until_success(
   step : Step,
   cwd : String,
-  timeout_ms : Int,
-  attempts : Int,
+  timeout_ms : Int32,
+  attempts : Int32,
 ) -> StepResult {
   let mut result = run_observed(step, cwd, timeout_ms)
   let mut attempt = 1
